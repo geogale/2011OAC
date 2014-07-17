@@ -1,0 +1,424 @@
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+# Code to Create the 2011 Area Classification for Output Areas (2011 OAC)
+# Feel free to share and reuse with attribution
+# Pre-Cluster 2 - Ascertain Number Of Clusters for K-Means using Elbow Statistic
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+
+rm(list = ls()) 
+gc()
+
+library(cluster)
+library(fpc)
+library(maptools)
+library(spdep)
+library(ggplot2)
+library(plotrix)
+library(scales)
+library(foreign)
+library(plyr)
+library(reshape2)
+
+setwd("/Users/Chris/Documents/2011 OAC")
+
+#Max number of Clusters
+CN <- 20
+
+#Number of k-means loops
+KM <- 10
+
+#Name of Classification
+NC1 <- "2011 OAC"
+NC2 <- "2011_OAC"
+
+Start <- Sys.time()
+
+#####################INPUT DATA#########################
+
+Files <- list.files(pattern = "\\.(csv|CSV)$") 
+	
+DatasetList<-c(2,5,8,11,14,17,29)	
+	
+for (i in 1:length(Files))
+{ 
+F <- read.csv(Files[i], head=TRUE) 
+OA <- F[1]
+F <- data.frame(F, row.names=1)
+F_Matrix <- as.matrix(F,rownames.force=TRUE)
+CG1<-DatasetList[i]
+assign(paste("Dataset",i, sep=""), F_Matrix)
+assign(paste("OA_Dataset",i, sep=""), OA)
+}
+
+FileNumbers<-length(Files)
+
+#####################CLUSTERING#########################
+
+StartC <- Sys.time()
+
+pb1 <- txtProgressBar(min = 0, max = length(Files), style = 3) 
+
+for (t in 1:length(Files))
+{
+
+DatasetT <- get(paste("Dataset",t, sep=""))
+WCSS_DatasetT <- (nrow(DatasetT)-1)*sum(apply(DatasetT,2,var))
+BSS_DatasetT <- 0
+TSS_DatasetT <- (nrow(DatasetT)-1)*sum(apply(DatasetT,2,var))
+WCSSDiff_DatasetT <- 0
+BSSDiff_DatasetT <- 0
+	
+for (j in 2:CN)
+{
+
+l <-j-1
+
+DatasetT_Best_WCSS_N <-1000000000000
+DatasetT_Best_WCSS_A <-c(1:5)
+DatasetT_Worst_WCSS_N <-10
+DatasetT_Worst_WCSS_A <-c(1:5)
+
+for (i in 1:KM)
+	{
+	Cluster_DatasetT <- kmeans(DatasetT, j)
+	DatasetT_Best_WCSS_B <- mean(Cluster_DatasetT$withinss)
+	DatasetT_Worst_WCSS_B <- mean(Cluster_DatasetT$withinss)
+	DatasetT_Best_WCSS_C<- data.frame (i, DatasetT_Best_WCSS_B, Cluster_DatasetT$tot.withinss, Cluster_DatasetT$betweenss, Cluster_DatasetT$totss)
+	DatasetT_Worst_WCSS_C<- data.frame (i, DatasetT_Worst_WCSS_B, Cluster_DatasetT$tot.withinss, Cluster_DatasetT$betweenss, Cluster_DatasetT$totss)
+	DatasetT_Best_WCSS_A <- rbind(DatasetT_Best_WCSS_A, DatasetT_Best_WCSS_C)
+	DatasetT_Worst_WCSS_A <- rbind(DatasetT_Worst_WCSS_A, DatasetT_Worst_WCSS_C)
+	
+	if (DatasetT_Best_WCSS_B < DatasetT_Best_WCSS_N)	
+		{
+		BestWCSS <- Cluster_DatasetT
+		DatasetT_Best_WCSS_N <- DatasetT_Best_WCSS_B
+		}
+	
+	if (DatasetT_Worst_WCSS_B > DatasetT_Worst_WCSS_N)	
+		{
+		WorstWCSS <- Cluster_DatasetT
+		DatasetT_Worst_WCSS_N <- DatasetT_Worst_WCSS_B
+		}
+
+	}
+
+WCSS_DatasetT[j] <- BestWCSS$tot.withinss
+BSS_DatasetT[j] <- BestWCSS$betweenss
+TSS_DatasetT[j] <- BestWCSS$totss
+WCSSDiff_DatasetT[j] <-WCSS_DatasetT[l]-WCSS_DatasetT[j]
+BSSDiff_DatasetT[j] <-BSS_DatasetT[l]-BSS_DatasetT[j]
+
+}
+assign(paste("WCSS_Dataset",t, sep=""), WCSS_DatasetT)
+assign(paste("BSS_Dataset",t, sep=""), BSS_DatasetT)
+assign(paste("TSS_Dataset",t, sep=""), TSS_DatasetT)
+assign(paste("WCSSDiff_Dataset",t, sep=""), WCSSDiff_DatasetT)
+assign(paste("BSSDiff_Dataset",t, sep=""), BSSDiff_DatasetT)
+
+Sys.sleep(0.1)
+setTxtProgressBar(pb1, t)
+#Progress Bar will appear below. (n.b. It may take some time to appear for larger calculations)
+}
+
+EndC <- Sys.time()
+#####################GRAPH#########################
+
+for (s in 1:length(Files))
+{
+CG2<-DatasetList[s]
+WCSSEditS <- get(paste("WCSS_Dataset",s, sep=""))
+WCSSEditS <-data.frame(WCSSEditS)
+WCSSEditS <- WCSSEditS[2:nrow(WCSSEditS),]
+WCSSEditS <-data.frame(WCSSEditS)
+ClusterNumbers <-c(2:CN)
+DatasetNameS <- c(paste("Dataset ", CG2, sep=""))
+WCSSGraphDataS<-cbind(WCSSEditS, ClusterNumbers, DatasetNameS)
+colnames(WCSSGraphDataS)<-c("WCSS", "Clusters", "Dataset")
+assign(paste("WCSSGraphData",s, sep=""), WCSSGraphDataS)
+}
+
+WCSSGraphData<-NULL
+for (f in 1:length(Files))
+{
+WCSSGraphDataF <- get(paste("WCSSGraphData",f, sep=""))
+WCSSGraphData<-rbind(WCSSGraphData, WCSSGraphDataF)
+}
+
+###Delete Datasets and update with new names
+WCSSGraphDataOld<-WCSSGraphData
+WCSSGraphDataNew <- subset(WCSSGraphData, Dataset!="Dataset 5")
+WCSSGraphDataNew <- subset(WCSSGraphDataNew, Dataset!="Dataset 14")
+WCSSGraphDataNew <- subset(WCSSGraphDataNew, Dataset!="Dataset 29")
+WCSSGraphDataNew$Dataset[WCSSGraphDataNew$Dataset == 'Dataset 8'] <- 'Dataset 5'
+WCSSGraphDataNew$Dataset[WCSSGraphDataNew$Dataset == 'Dataset 11'] <- 'Dataset 8'
+WCSSGraphDataNew$Dataset[WCSSGraphDataNew$Dataset == 'Dataset 17'] <- 'Dataset 11'
+WCSSGraphData<-WCSSGraphDataNew
+
+for (sc in 1:length(Files))
+{
+CG3<-DatasetList[sc,]
+WCSSEditSC <- get(paste("WCSS_Dataset",sc, sep=""))
+WCSSEditSC <-data.frame(WCSSEditSC)
+WCSSEditSC <- WCSSEditSC[2:nrow(WCSSEditSC),]
+WCSSEditSC <-data.frame(WCSSEditSC)
+WCSSEditOldRange = max(WCSSEditSC) - min(WCSSEditSC)
+WCSSEditNewRange = (1000 - 0)
+WCSSEditScale = (((WCSSEditSC - min(WCSSEditSC)) * WCSSEditNewRange) / WCSSEditOldRange) + 0
+ClusterNumbers <-c(2:CN)
+DatasetNameSC <- c(paste("Dataset ", CG3, sep=""))
+WCSSGraphDataSC<-cbind(WCSSEditScale, ClusterNumbers, DatasetNameSC)
+colnames(WCSSGraphDataSC)<-c("WCSSScaled", "Clusters", "Dataset")
+assign(paste("WCSSGraphDataScaled",sc, sep=""), WCSSGraphDataSC)
+}
+
+WCSSGraphDataScaled<-NULL
+for (fs in 1:length(Files))
+{
+WCSSGraphDataScaledF <- get(paste("WCSSGraphDataScaled",fs, sep=""))
+WCSSGraphDataScaled<-rbind(WCSSGraphDataScaled, WCSSGraphDataScaledF)
+}
+
+SMin <-min(WCSSGraphDataScaled$WCSSScaled)
+SMax <-max(WCSSGraphDataScaled$WCSSScaled)
+SMaxAxis<-(SMax-SMin)/5
+
+if(FileNumbers>1)
+{
+WCSSGraphScaled <- ggplot(WCSSGraphDataScaled, aes(Clusters, WCSSScaled, colour = Dataset))
+WCSSGraphScaled <- WCSSGraphScaled + geom_line(alpha = I(0.4), size=2) + geom_point(size=4)
+WCSSGraphScaled <- WCSSGraphScaled + labs(x="Number of Clusters",y="Total Within Cluster Sum of Squares Scaled\n") 
+WCSSGraphScaled <- WCSSGraphScaled + ggtitle(paste("Total Within Cluster Sum of Squares Scaled for 2 to", CN, "Clusters\n", sep=" "))
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.x = element_text(vjust = -1.0)) 
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.y = element_text(vjust = 0.1))
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.y = element_text(angle=90))
+WCSSGraphScaled <- WCSSGraphScaled + scale_x_continuous(breaks = 2:CN, limits = c(2,CN))
+WCSSGraphScaled <- WCSSGraphScaled + scale_y_continuous(name="Total Within Cluster Sum of Squares Scaled", limits=c(SMin, SMax), breaks = seq(SMin, SMax, SMaxAxis), labels = comma)
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.x = element_text(size=32, colour = "black", face = "bold"),axis.text.x=element_text(angle=0, size=24, vjust=0.0))
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.y = element_text(size=32,colour = "black", face = "bold"),axis.text.y=element_text(size=24))
+WCSSGraphScaled <- WCSSGraphScaled + theme(plot.title = element_text(size = 40, colour = "black", face = "bold"))
+WCSSGraphScaled <- WCSSGraphScaled + theme(legend.title = element_text(size=26))
+WCSSGraphScaled <- WCSSGraphScaled + theme(legend.text = element_text(size=26))
+WCSSGraphScaled <- WCSSGraphScaled + theme(legend.key.height=unit(4,"line")) 
+WCSSGraphScaled <- WCSSGraphScaled + theme(legend.key.width=unit(3,"line")) 
+WCSSGraphScaled <- WCSSGraphScaled + theme(panel.grid.minor.x=element_blank())
+WCSSGraphScaled <- WCSSGraphScaled + theme(plot.margin = unit(c(1.5, 1.5, 1.5, 1.5), "cm"))
+WCSSGraphScaled <- WCSSGraphScaled + guides (colour = guide_legend(title = "DATASET"))
+} else
+{
+WCSSGraphScaled <- ggplot(WCSSGraphDataScaled, aes(Clusters, WCSSScaled, colour = Dataset))
+WCSSGraphScaled <- WCSSGraphScaled + geom_line(alpha = I(0.4), size=2) + geom_point(size=4)
+WCSSGraphScaled <- WCSSGraphScaled + labs(x="Number of Clusters",y="Total Within Cluster Sum of Squares Scaled\n") 
+WCSSGraphScaled <- WCSSGraphScaled + ggtitle(paste("Total Within Cluster Sum of Squares Scaled for 2 to", CN, "Clusters\n", sep=" "))
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.x = element_text(vjust = -1.0)) 
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.y = element_text(vjust = 0.1))
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.y = element_text(angle=90))
+WCSSGraphScaled <- WCSSGraphScaled + scale_x_continuous(breaks = 2:CN, limits = c(2,CN))
+WCSSGraphScaled <- WCSSGraphScaled + scale_y_continuous(name="Total Within Cluster Sum of Squares Scaled", limits=c(SMin, SMax), breaks = seq(SMin, SMax, SMaxAxis), labels = comma)
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.x = element_text(size=32, colour = "black", face = "bold"),axis.text.x=element_text(angle=0, size=24, vjust=0.0))
+WCSSGraphScaled <- WCSSGraphScaled + theme(axis.title.y = element_text(size=32,colour = "black", face = "bold"),axis.text.y=element_text(size=24))
+WCSSGraphScaled <- WCSSGraphScaled + theme(plot.title = element_text(size = 40, colour = "black", face = "bold"))
+WCSSGraphScaled <- WCSSGraphScaled + theme(legend.title = element_text(size=26))
+WCSSGraphScaled <- WCSSGraphScaled + theme(legend.text = element_text(size=26))
+WCSSGraphScaled <- WCSSGraphScaled + theme(legend.key.height=unit(4,"line")) 
+WCSSGraphScaled <- WCSSGraphScaled + theme(legend.key.width=unit(3,"line")) 
+WCSSGraphScaled <- WCSSGraphScaled + theme(panel.grid.minor.x=element_blank())
+WCSSGraphScaled <- WCSSGraphScaled + theme(plot.margin = unit(c(1.5, 1.5, 1.5, 1.5), "cm"))
+WCSSGraphScaled <- WCSSGraphScaled + guides (colour = guide_legend(title = "DATASET"))
+WCSSGraphScaled <- WCSSGraphScaled + theme(legend.position="none")
+}
+
+
+AMin <-min(WCSSGraphData$WCSS)
+AMax <-max(WCSSGraphData$WCSS)
+AMinRound<-round_any(AMin, 1)
+AMaxRound<-round_any(AMax, 1)
+AMaxAxis<-(AMax-AMin)/5
+AMaxChar<-nchar(sprintf("%.0f",AMaxAxis))
+AMaxCharMaxus1<-AMaxChar-1
+AMaxFinalAxis <-1
+for (j1 in 1:AMaxCharMaxus1)
+{
+AMaxFinalAxis<-paste(AMaxFinalAxis, "0", sep = "")
+}
+AMaxFinalAxis<-as.numeric(AMaxFinalAxis)
+AMaxFinal<-round_any(AMaxAxis, AMaxFinalAxis)
+AMinValue<-round_any(AMin,AMaxFinal, f =floor)
+AMaxValue<-round_any(AMax,AMaxFinal, f =ceiling)
+
+if(FileNumbers>1)
+{
+WCSSGraph <- ggplot(WCSSGraphData, aes(Clusters, WCSS, colour = Dataset))
+WCSSGraph <- WCSSGraph + geom_line(alpha = I(0.4), size=2) + geom_point(size=4)
+WCSSGraph <- WCSSGraph + labs(x="Number of Clusters",y="Total Within Cluster Sum of Squares\n") 
+WCSSGraph <- WCSSGraph + ggtitle(paste("Total Within Cluster Sum of Squares for 2 to", CN, "Clusters\n", sep=" "))
+WCSSGraph <- WCSSGraph + theme(axis.title.x = element_text(vjust = -1.0)) 
+WCSSGraph <- WCSSGraph + theme(axis.title.y = element_text(vjust = 0.1))
+WCSSGraph <- WCSSGraph + theme(axis.title.y = element_text(angle=90))
+WCSSGraph <- WCSSGraph + scale_x_continuous(breaks = 2:CN, limits = c(2,CN))
+WCSSGraph <- WCSSGraph + scale_y_continuous(name="Total Within Cluster Sum of Squares", limits=c(AMinValue, AMaxValue), breaks = seq(AMinValue, AMaxValue, AMaxFinal), labels = comma)
+WCSSGraph <- WCSSGraph + theme(axis.title.x = element_text(size=32, colour = "black", face = "bold"),axis.text.x=element_text(angle=0, size=24, vjust=0.0))
+WCSSGraph <- WCSSGraph + theme(axis.title.y = element_text(size=32,colour = "black", face = "bold"),axis.text.y=element_text(size=24))
+WCSSGraph <- WCSSGraph + theme(plot.title = element_text(size = 40, colour = "black", face = "bold"))
+WCSSGraph <- WCSSGraph + theme(legend.title = element_text(size=26))
+WCSSGraph <- WCSSGraph + theme(legend.text = element_text(size=26))
+WCSSGraph <- WCSSGraph + theme(legend.key.height=unit(4,"line")) 
+WCSSGraph <- WCSSGraph + theme(legend.key.width=unit(3,"line")) 
+WCSSGraph <- WCSSGraph + theme(panel.grid.minor.x=element_blank())
+WCSSGraph <- WCSSGraph + theme(plot.margin = unit(c(1.5, 1.5, 1.5, 1.5), "cm"))
+WCSSGraph <- WCSSGraph + guides (colour = guide_legend(title = "DATASET"))
+} else
+{
+WCSSGraph <- ggplot(WCSSGraphData, aes(Clusters, WCSS, colour = Dataset))
+WCSSGraph <- WCSSGraph + geom_line(alpha = I(0.4), size=2) + geom_point(size=4)
+WCSSGraph <- WCSSGraph + labs(x="Number of Clusters",y="Total Within Cluster Sum of Squares\n") 
+WCSSGraph <- WCSSGraph + ggtitle(paste("Total Within Cluster Sum of Squares for 2 to", CN, "Clusters\n", sep=" "))
+WCSSGraph <- WCSSGraph + theme(axis.title.x = element_text(vjust = -1.0)) 
+WCSSGraph <- WCSSGraph + theme(axis.title.y = element_text(vjust = 0.1))
+WCSSGraph <- WCSSGraph + theme(axis.title.y = element_text(angle=90))
+WCSSGraph <- WCSSGraph + scale_x_continuous(breaks = 2:CN, limits = c(2,CN))
+WCSSGraph <- WCSSGraph + scale_y_continuous(name="Total Within Cluster Sum of Squares", limits=c(AMinValue, AMaxValue), breaks = seq(AMinValue, AMaxValue, AMaxFinal), labels = comma)
+WCSSGraph <- WCSSGraph + theme(axis.title.x = element_text(size=32, colour = "black", face = "bold"),axis.text.x=element_text(angle=0, size=24, vjust=0.0))
+WCSSGraph <- WCSSGraph + theme(axis.title.y = element_text(size=32,colour = "black", face = "bold"),axis.text.y=element_text(size=24))
+WCSSGraph <- WCSSGraph + theme(plot.title = element_text(size = 40, colour = "black", face = "bold"))
+WCSSGraph <- WCSSGraph + theme(legend.title = element_text(size=26))
+WCSSGraph <- WCSSGraph + theme(legend.text = element_text(size=26))
+WCSSGraph <- WCSSGraph + theme(legend.key.height=unit(4,"line")) 
+WCSSGraph <- WCSSGraph + theme(legend.key.width=unit(3,"line")) 
+WCSSGraph <- WCSSGraph + theme(panel.grid.minor.x=element_blank())
+WCSSGraph <- WCSSGraph + theme(plot.margin = unit(c(1.5, 1.5, 1.5, 1.5), "cm"))
+WCSSGraph <- WCSSGraph + guides (colour = guide_legend(title = "DATASET"))
+WCSSGraph <- WCSSGraph + theme(legend.position="none")
+}
+
+dir.create("Graphs", showWarnings = FALSE)
+
+pdf(file=paste("Graphs/Total Within Cluster Sum of Squares for 2 to", CN, "Clusters for", FileNumbers, "Datasets - Standard.pdf", sep = " "), height=20, width=30, onefile=FALSE, family='Courier')  
+WCSSGraph
+graphics.off()
+
+pdf(file=paste("Graphs/Total Within Cluster Sum of Squares for 2 to", CN, "Clusters for", FileNumbers, "Datasets - Scaled.pdf", sep = " "), height=20, width=30, onefile=FALSE, family='Courier')  
+WCSSGraphScaled
+graphics.off()
+
+PlotList <-list()
+
+for (c in 1:length(Files))
+{
+CG5<-DatasetList[c]
+WCSSGraphDataC <- get(paste("WCSSGraphData",c, sep=""))
+
+CMin <-min(WCSSGraphDataC$WCSS)
+CMax <-max(WCSSGraphDataC$WCSS)
+CMinRound<-round_any(CMin, 1)
+CMaxRound<-round_any(CMax, 1)
+CMaxAxis<-(CMax-CMin)/5
+CMaxChar<-nchar(sprintf("%.0f",CMaxAxis))
+CMaxCharMaxus1<-CMaxChar-1
+CMaxFinalAxis <-1
+for (j1 in 1:CMaxCharMaxus1)
+{
+CMaxFinalAxis<-paste(CMaxFinalAxis, "0", sep = "")
+}
+CMaxFinalAxis<-as.numeric(CMaxFinalAxis)
+CMaxFinal<-round_any(CMaxAxis, CMaxFinalAxis)
+CMinValue<-round_any(CMin,CMaxFinal, f =floor)
+CMaxValue<-round_any(CMax,CMaxFinal, f =ceiling)
+
+WCSSGraphC <- ggplot(WCSSGraphDataC, aes(Clusters, WCSS))
+WCSSGraphC <- WCSSGraphC + geom_line(alpha = I(0.4), size=2) + geom_point(size=4)
+WCSSGraphC <- WCSSGraphC + labs(x="Number of Clusters",y="Total Within Cluster Sum of Squares\n") 
+WCSSGraphC <- WCSSGraphC + ggtitle(paste("Total Within Cluster Sum of Squares for 2 to", CN, "Clusters - Dataset", CG5,"\n", sep=" "))
+WCSSGraphC <- WCSSGraphC + theme(axis.title.x = element_text(vjust = -1.0)) 
+WCSSGraphC <- WCSSGraphC + theme(axis.title.y = element_text(vjust = 0.0))
+WCSSGraphC <- WCSSGraphC + theme(axis.title.y = element_text(angle=90))
+WCSSGraphC <- WCSSGraphC + scale_x_continuous(breaks = 2:CN, limits = c(2,CN))
+WCSSGraphC <- WCSSGraphC + scale_y_continuous(name="Total Within Cluster Sum of Squares", limits=c(CMinValue, CMaxValue), breaks = seq(CMinValue, CMaxValue, CMaxFinal), labels = comma)
+WCSSGraphC <- WCSSGraphC + theme(axis.title.x = element_text(size=32, colour = "black", face = "bold"),axis.text.x=element_text(angle=0, size=24, vjust=0.0))
+WCSSGraphC <- WCSSGraphC + theme(axis.title.y = element_text(size=32,colour = "black", face = "bold"),axis.text.y=element_text(size=24))
+WCSSGraphC <- WCSSGraphC + theme(plot.title = element_text(size = 40, colour = "black", face = "bold"))
+WCSSGraphC <- WCSSGraphC + theme(legend.title = element_text(size=26))
+WCSSGraphC <- WCSSGraphC + theme(legend.text = element_text(size=26))
+WCSSGraphC <- WCSSGraphC + theme(legend.key.height=unit(4,"line")) 
+WCSSGraphC <- WCSSGraphC + theme(legend.key.width=unit(3,"line")) 
+WCSSGraphC <- WCSSGraphC + theme(panel.grid.minor.x=element_blank())
+WCSSGraphC <- WCSSGraphC + theme(plot.margin = unit(c(1.5, 1.5, 1.5, 1.5), "cm"))
+WCSSGraphC <- WCSSGraphC + guides (colour = guide_legend(title = "DATASET"))
+WCSSGraphC <- WCSSGraphC + theme(legend.position="none")
+print(WCSSGraphC)
+assign(paste("WCSSGraphC_",c, sep=""),recordPlot())
+PlotList <- list(PlotList, get(paste("WCSSGraphC_", c, sep="")))
+graphics.off()
+}
+
+pdf(file=paste("Graphs/Total Within Cluster Sum of Squares for 2 to", CN, "Clusters for", FileNumbers, "Datasets - Combined.pdf", sep = " "), height=20, width=30, family='Courier')  
+PlotList
+graphics.off()
+
+#####################DATA#########################
+
+dir.create("Data", showWarnings = FALSE)
+dir.create("Data/Datasets", showWarnings = FALSE)
+
+WCSSGraphDataOutput<-dcast(WCSSGraphData, Clusters ~ Dataset, value.var = "WCSS")
+write.table(WCSSGraphDataOutput, paste("Data/Total Within Cluster Sum of Squares for 2 to", CN, "Clusters for", FileNumbers, "Datasets.csv", sep = " "), sep = ",", row.names= FALSE, col.names = TRUE, qmethod = "double")
+
+for (d in 1:length(Files))
+{
+CG4<-DatasetList[d]
+WCSSDatasetD <- get(paste("WCSS_Dataset",d, sep=""))
+BSSDatasetD <- get(paste("BSS_Dataset",d, sep=""))
+TSSDatasetD <- get(paste("TSS_Dataset",d, sep=""))
+WCSSDiffDatasetD <- get(paste("WCSSDiff_Dataset",d, sep=""))
+BSSDiffDatasetD <- get(paste("BSSDiff_Dataset",d, sep=""))
+WCSSGraphDataScaledD <- get(paste("WCSSGraphDataScaled",d, sep=""))
+WCSSGraphDataWCSSScale <- WCSSGraphDataScaledD$WCSSScaled
+
+WCSSEdit <-data.frame(WCSSDatasetD)
+BSSEdit <-data.frame(BSSDatasetD)
+TSSEdit <-data.frame(TSSDatasetD)
+WCSSEdit <- WCSSEdit[2:nrow(WCSSEdit),]
+WCSSEdit <-data.frame(WCSSEdit)
+BSSEdit <- BSSEdit[2:nrow(BSSEdit),]
+BSSEdit <-data.frame(BSSEdit)
+TSSEdit <- TSSEdit[2:nrow(TSSEdit),]
+TSSEdit <-data.frame(TSSEdit)
+
+WCSSDiffDatasetD[2] <- NA
+WCSSDiffDatasetD <-data.frame(WCSSDiffDatasetD)
+WCSSDiffDatasetD <- WCSSDiffDatasetD[2:nrow(WCSSDiffDatasetD),]
+WCSSDiffDatasetD <-data.frame(WCSSDiffDatasetD)
+BSSDiffDatasetD[2] <- NA
+BSSDiffDatasetD <-data.frame(BSSDiffDatasetD)
+BSSDiffDatasetD <- BSSDiffDatasetD[2:nrow(BSSDiffDatasetD),]
+BSSDiffDatasetD <-data.frame(BSSDiffDatasetD)
+
+SSDataDatasetD<-cbind(ClusterNumbers, WCSSEdit, WCSSGraphDataWCSSScale, WCSSDiffDatasetD, BSSEdit, BSSDiffDatasetD, TSSEdit)
+names(SSDataDatasetD)<- c("Clusters", "Total Within Cluster Sum of Squares", "Total Within Cluster Sum of Squares Scaled", "Total Within Cluster Sum of Squares Difference", "Total Between Cluster Sum of Squares", "Total Between Cluster Sum of Squares Difference", "Total Within and Between Sum of Squares")
+
+write.table(SSDataDatasetD, paste("Data/Datasets/Dataset ",CG4," Sum of Squares Data for 2 to ", CN," ", NC1," Clusters.csv", sep = ""), sep = ",", row.names= FALSE, col.names = TRUE, qmethod = "double")
+}
+
+DatasetOrder <-NULL
+for (e in 1:length(Files))
+{
+DatasetNumber<-paste("Dataset ", e, sep="")
+DatasetOrder <- rbind(DatasetOrder, DatasetNumber)
+}
+DatasetList<-data.frame(DatasetOrder[,1])
+FilesSub<-substr(Files, 9, nchar(Files)-4)
+FileList<-data.frame(FilesSub)
+FileDatasetLookup <- cbind(DatasetList, FileList)
+colnames(FileDatasetLookup) <- c("Dataset", "File Name")
+
+write.table(FileDatasetLookup, paste("Data/Dataset Number to File Name Lookup for", FileNumbers, "Files.csv", sep = " "), sep = ",", row.names= FALSE, col.names = TRUE, qmethod = "double")
+
+End <- Sys.time()
+
+End-Start
+EndC-StartC
+
+##########SAVE WORKSPACE##########
+gc()
+save.image(paste("2011 OAC - Ascertain Number Of Clusters for K-Means - 2 to ", CN, " Clusters for ", FileNumbers, " Files.RData", sep=""))
+##################################
+
+
