@@ -1,0 +1,156 @@
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+# Code to Create the 2011 Area Classification for Output Areas (2011 OAC)
+# Feel free to share and reuse with attribution
+# Ancillary 2 - Create Cluster Lookup
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+
+rm(list = ls()) 
+gc()
+
+####################################################################################################
+# Setup ############################################################################################
+####################################################################################################
+
+#Library packages required
+require("foreign")
+
+#Set Working Directory - Note: Other working directories are used in this code. Replace directory locations where required.
+setwd("/Users/Chris/Documents/2011 OAC/Cluster Lookup/Input/Groups/Cluster")
+
+####################################################################################################
+# Cluster Lookup ###################################################################################
+####################################################################################################
+
+files <- list.files(pattern = "\\.(csv|CSV)$") 
+
+OAPop <- read.csv("/Users/Chris/Desktop/2011 Classifications/2011 OAC/Cluster Lookup/Input/Lookup/2011 OA Population and Lookup.csv", head=TRUE)
+SprGrp <- read.csv("/Users/Chris/Desktop/2011 Classifications/2011 OAC/Cluster Lookup/Input/Supergroups/Cluster/OAC_Converted_Transformed_Range_10000_KMeans_Runs.csv", head=TRUE)
+SprGrpClusters<-cbind(data.frame(SprGrp$OA), data.frame(SprGrp$Cluster))
+colnames(SprGrpClusters)<-c("OA", "SPRGRP")
+SprGrpSED <- read.csv("/Users/Chris/Desktop/2011 Classifications/2011 OAC/Cluster Lookup/Input/Supergroups/SED/OAC_Converted_Transformed_Range_SED_Cluster_Data.csv", head=TRUE)
+OAC2011Clusters <-merge(OAPop, SprGrpClusters, by= "OA", ,all = FALSE)
+OAPop <- OAC2011Clusters
+OAPop$SPRGRP<-NULL
+
+F<-(NULL)
+G <- read.csv(files[1], head=TRUE) 
+
+for (i in 2:length(files))
+{ 
+F <- read.csv(files[i], head=TRUE)
+G <- rbind(G,F)
+}
+
+GrpClusters<-cbind(data.frame(G$OA), data.frame(G$Cluster))
+colnames(GrpClusters)<-c("OA", "GRP")
+OAC2011Clusters <-merge(OAC2011Clusters, GrpClusters, by= "OA", ,all = TRUE)
+
+setwd("/Users/Chris/Documents/2011 OAC/Cluster Lookup/Input/Subgroups/Cluster")
+files <- list.files(pattern = "\\.(csv|CSV)$") 
+
+P<-(NULL)
+E <- read.csv(files[1], head=TRUE) 
+
+for (i in 2:length(files))
+{ 
+P <- read.csv(files[i], head=TRUE)
+E <- rbind(E,P)
+}
+
+SubGrpClusters<-cbind(data.frame(E$OA), data.frame(E$Cluster))
+colnames(SubGrpClusters)<-c("OA", "SUBGRP")
+OAC2011Clusters <-merge(OAC2011Clusters, SubGrpClusters, by= "OA", ,all = TRUE)
+
+SprGrpSEDMin<-data.frame(SprGrpSED[,1:2])
+colnames(SprGrpSEDMin)<-c("OA","SPR_SED")
+SprGrpSED$Min_SED_Value<-NULL
+SprGrpSED$Cluster<-NULL
+colnames(SprGrpSED)<-gsub("Supergroup_", "SPR", colnames(SprGrpSED))
+
+setwd("/Users/Chris/Documents/2011 OAC/Cluster Lookup/Input/Groups/SED")
+files <- list.files(pattern = "\\.(csv|CSV)$") 
+
+B<-(NULL)
+A <-(NULL)
+N <- read.csv(files[1], head=TRUE) 
+
+NMin<-data.frame(N[,1:2])
+colnames(NMin)<-c("OA","GRP_SED")
+N$Min_SED_Value<-NULL
+N$Cluster<-NULL
+colnames(N)<-gsub("Group_", "GRP", colnames(N))
+N <-merge(OAPop, N, by= "OA", ,all = TRUE)
+N$SUB_REGION<-NULL
+N$REGION<-NULL
+N$POPULATION<-NULL
+
+for (i in 2:length(files))
+{ 
+B <- read.csv(files[i], head=TRUE)
+
+BMin<-data.frame(B[,1:2])
+colnames(BMin)<-c("OA","GRP_SED")
+B$Min_SED_Value<-NULL
+B$Cluster<-NULL
+colnames(B)<-gsub("Group_", "GRP", colnames(B))
+B <-merge(OAPop, B, by= "OA", ,all = TRUE)
+B$SUB_REGION<-NULL
+B$REGION<-NULL
+B$POPULATION<-NULL
+N <-merge(N, B, by= "OA", ,all = TRUE)
+NMin <- rbind(NMin,BMin)
+}
+
+setwd("/Users/Chris/Documents/2011 OAC/Cluster Lookup/Input/Subgroups/SED")
+files <- list.files(pattern = "\\.(csv|CSV)$") 
+
+C <-(NULL)
+D <-(NULL)
+X <- read.csv(files[1], head=TRUE) 
+
+XMin<-data.frame(X[,1:2])
+colnames(XMin)<-c("OA","SUB_SED")
+X$Min_SED_Value<-NULL
+X$Cluster<-NULL
+colnames(X)<-gsub("Subgroup_", "SUB", colnames(X))
+X <-merge(OAPop, X, by= "OA", ,all = TRUE)
+X$SUB_REGION<-NULL
+X$REGION<-NULL
+X$POPULATION<-NULL
+
+for (i in 2:length(files))
+{ 
+C <- read.csv(files[i], head=TRUE)
+
+CMin<-data.frame(C[,1:2])
+colnames(CMin)<-c("OA","SUB_SED")
+C$Min_SED_Value<-NULL
+C$Cluster<-NULL
+colnames(C)<-gsub("Subgroup_", "SUB", colnames(C))
+C <-merge(OAPop, C, by= "OA", ,all = TRUE)
+C$SUB_REGION<-NULL
+C$REGION<-NULL
+C$POPULATION<-NULL
+X <-merge(X, C, by= "OA", ,all = TRUE)
+XMin <- rbind(XMin,CMin)
+}
+
+OAC2011Clusters <-merge(OAC2011Clusters, SprGrpSEDMin, by= "OA", ,all = TRUE)
+OAC2011Clusters <-merge(OAC2011Clusters, NMin, by= "OA", ,all = TRUE)
+OAC2011Clusters <-merge(OAC2011Clusters, XMin, by= "OA", ,all = TRUE)
+
+SprGrpSED<-SprGrpSED[,order(c(1,names(SprGrpSED[2:ncol(SprGrpSED)])))]
+OAC2011Clusters <-merge(OAC2011Clusters, SprGrpSED, by= "OA", ,all = TRUE)
+N<-N[,order(c(1,names(N[2:ncol(N)])))]
+OAC2011Clusters <-merge(OAC2011Clusters, N, by= "OA", ,all = TRUE)
+X<-X[,order(c(1,names(X[2:ncol(X)])))]
+OAC2011Clusters <-merge(OAC2011Clusters, X, by= "OA", ,all = TRUE)
+
+setwd("/Users/Chris/Documents/2011 OAC/Cluster Lookup")
+write.table(OAC2011Clusters, paste("2011 OAC Clusters.csv"), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+write.dbf(OAC2011Clusters, paste("2011 OAC Clusters.dbf"))
+
+####################################################################################################
+# End ##############################################################################################
+####################################################################################################
+
