@@ -1,0 +1,1062 @@
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+# Code to Create the 2011 Area Classification for Output Areas (2011 OAC)
+# Feel free to share and reuse with attribution
+# Ancillary 3 - Update Plot Names
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+
+dir.create("/Users/Chris/Documents/2011 OAC/All Cluster Profiles", showWarnings = FALSE)
+
+rm(list = ls()) 
+gc()
+
+####################################################################################################
+# Setup ############################################################################################
+####################################################################################################
+
+#Library packages required
+library(modeest)
+library(reshape2)
+library(plyr)
+library(ggplot2)
+library(RColorBrewer)
+library(plotrix)
+library(fpc)
+library(ineq)
+library(grid)
+library(Hmisc)
+library(car)
+library(gtools)
+
+#Set Working Directory
+setwd("/Volumes/D/2011 Classifications/2011 OAC/2011 OAC Tier 1 - Supergroups")
+
+#Load RData file
+load("OAC_Converted_Transformed_Range_Clustered_with_SED_Values.RData")
+
+#Custom Cluster Names
+OPUT_CN_B1 <- "1 - Rural Residents"
+OPUT_CN_B2 <- "2 - Cosmopolitans"
+OPUT_CN_B3 <- "3 - Ethnicity Central"
+OPUT_CN_B4 <- "4 - Multicultural Metropolitans"
+OPUT_CN_B5 <- "5 - Urbanites"
+OPUT_CN_B6 <- "6 - Suburbanites"
+OPUT_CN_B7 <- "7 - Constrained City Dwellers"
+OPUT_CN_B8 <- "8 - Hard-Pressed Living"
+
+####################################################################################################
+# Bar Plots Setup ##################################################################################
+####################################################################################################
+
+if(RQCLUS=="SUPERGROUP")
+{
+BARCOLOURHIGH<-"midnightblue"
+BARCOLOURLOW<-"skyblue3"
+RADIALCOLOUR<-"blue"
+}
+
+if(RQCLUS=="GROUP")
+{
+BARCOLOURHIGH<-"darkgreen"
+BARCOLOURLOW<-"darkseagreen3"
+RADIALCOLOUR<-"forestgreen"
+}
+
+if(RQCLUS=="SUBGROUP")
+{
+BARCOLOURHIGH<-"purple4"
+BARCOLOURLOW<-"plum3"
+RADIALCOLOUR<-"purple4"
+}
+
+BARPLOT_B <- "Cluster Profiles"
+BARPLOT_V <- "Cluster"
+RADIALNAME_B <- "Cluster Profiles"
+RADIALSUB_B <- "Cluster Profile"
+DOCFILE_B <- "Cluster"
+BARSUB_G <- "UK Mean"
+BARSUB_C <- "Parent Cluster Mean"
+BARSUB_CG <- "UK and Parent Cluster Mean"
+
+if(RQOAC =="YES")
+{
+	if(RQCLUS=="SUPERGROUP")
+	{
+	BARPLOT_B <- "2011 OAC Supergroups"
+	BARPLOT_V <- "Supergroup"
+	RADIALNAME_B <- "2011 OAC Supergroups"
+	RADIALSUB_B <- "2011 OAC Supergroup Profile"
+	DOCFILE_B <- "2011 OAC Supergroup"
+	}
+	if(RQCLUS=="GROUP")
+	{
+	BARPLOT_B <- "2011 OAC Groups"
+	BARPLOT_V <- "Group"
+	RADIALNAME_B <- "2011 OAC Groups"
+	RADIALSUB_B <- "2011 OAC Group Profile"
+	DOCFILE_B <- "2011 OAC Group"
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BARPLOT_B <- "2011 OAC Subgroups"
+	BARPLOT_V <- "Subgroup"
+	RADIALNAME_B <- "2011 OAC Subgroups"
+	RADIALSUB_B <- "2011 OAC Subgroup Profile"
+	DOCFILE_B <- "2011 OAC Subgroup"
+	}
+}
+
+####################################################################################################
+# Bar Plots Parent Cluster Mean ####################################################################
+####################################################################################################
+
+BARPLOTPARENTHIGH = BARCOLOURHIGH
+BARPLOTPARENTLOW = BARCOLOURLOW
+if(RQCLUS!="SUPERGROUP")
+{
+BARPLOTPARENTHIGH = BARCOLOURLOW
+BARPLOTPARENTLOW = BARCOLOURHIGH
+}
+
+dir.create("Cluster Plots", showWarnings = FALSE)
+
+OAC_Converted_Transformed_Range_Clus_Nu<- nrow(data.frame(unique(OAC_Converted_Transformed_Range$Cluster)))
+
+OAC_Converted_Transformed_Range_Global_Mean<- data.frame(lapply(OAC_Converted_Transformed_Range[,1:c(ncol(OAC_Converted_Transformed_Range)-1)], mean))
+
+OAC_Converted_Transformed_Range_Out_Tab<- data.frame(names(OAC_Converted_Transformed_Range_Global_Mean))
+colnames(OAC_Converted_Transformed_Range_Out_Tab)<- c("OAC_Converted_Transformed_Range_Var")
+
+for (i in 1:OAC_Converted_Transformed_Range_Clus_Nu)
+	{
+	OAC_Converted_Transformed_Range_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==i),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	OAC_Converted_Transformed_Range_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==BarPlotClus),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	OAC_Converted_Transformed_Range_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==BarPlotClus),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	}
+	
+	OAC_Converted_Transformed_Range_Mean<- data.frame(lapply(OAC_Converted_Transformed_Range_Sel, mean))
+	OAC_Converted_Transformed_Range_Out_Col<- t(OAC_Converted_Transformed_Range_Mean-OAC_Converted_Transformed_Range_Global_Mean)
+	colnames(OAC_Converted_Transformed_Range_Out_Col)<- c(paste(BARPLOT_V, i, sep=" "))
+	
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	colnames(OAC_Converted_Transformed_Range_Out_Col)<- c(paste(BARPLOT_V, BarPlotClus, sep=" "))
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	colnames(OAC_Converted_Transformed_Range_Out_Col)<- c(paste(BARPLOT_V, BarPlotClus, sep=" "))
+	}
+	OAC_Converted_Transformed_Range_Out_Tab<- data.frame(OAC_Converted_Transformed_Range_Out_Tab, OAC_Converted_Transformed_Range_Out_Col)
+	}
+	
+OAC_Converted_Transformed_Range_Out_Var_ID <- data.frame (1:nrow(OAC_Converted_Transformed_Range_Out_Tab),OAC_Converted_Transformed_Range_Out_Tab)
+colnames(OAC_Converted_Transformed_Range_Out_Var_ID) <- c("OAC_Converted_Transformed_Range_VarID",names(OAC_Converted_Transformed_Range_Out_Tab))
+colnames(OAC_Converted_Transformed_Range_Out_Var_ID) <- gsub('.', ' ',colnames(OAC_Converted_Transformed_Range_Out_Var_ID),fixed=TRUE)
+
+OAC_Converted_Transformed_Range_Final <-NULL
+
+for (i in 1:OAC_Converted_Transformed_Range_Clus_Nu)
+	{
+	if(RQCLUS=="SUPERGROUP")
+	{
+	OAC_Converted_Transformed_Range_LDat<- data.frame(i, OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID, OAC_Converted_Transformed_Range_Out_Var_ID[paste(BARPLOT_V," ",i, sep="")])
+	}
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	OAC_Converted_Transformed_Range_LDat<- data.frame(BarPlotClus, OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID, OAC_Converted_Transformed_Range_Out_Var_ID[paste(BARPLOT_V," ",BarPlotClus, sep="")])
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	OAC_Converted_Transformed_Range_LDat<- data.frame(BarPlotClus, OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID, OAC_Converted_Transformed_Range_Out_Var_ID[paste(BARPLOT_V," ",BarPlotClus, sep="")])
+	}
+	names(OAC_Converted_Transformed_Range_LDat)<- c("clusternumber", "ID","data")
+	OAC_Converted_Transformed_Range_LDat$clusterrank <- ave(OAC_Converted_Transformed_Range_LDat$data, FUN=rank)
+	OAC_Converted_Transformed_Range_Final <- rbind(OAC_Converted_Transformed_Range_Final, OAC_Converted_Transformed_Range_LDat) 
+	}
+
+names(OAC_Converted_Transformed_Range_Final)<- c("clusterNumber", "varID", "Data", "clusterRank")
+
+OAC_Converted_Transformed_Range_CPD<-dcast(OAC_Converted_Transformed_Range_Final, varID ~ clusterNumber, value.var = "Data")
+colnames(OAC_Converted_Transformed_Range_CPD)[1] <-"Variable Number"
+for (ucl in 1:CN)
+{
+	if(RQCLUS=="SUPERGROUP")
+	{
+	colnames(OAC_Converted_Transformed_Range_CPD)[ucl+1] <-paste(get(paste("OPUT_CN_B", ucl, sep="")), "Variable Data", sep=" ")
+	}
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[ucl], sep="")
+	colnames(OAC_Converted_Transformed_Range_CPD)[ucl+1] <-paste(get(paste("OPUT_CN_B", ucl, sep="")), "Variable Data", sep=" ")
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, ucl, sep="")
+	colnames(OAC_Converted_Transformed_Range_CPD)[ucl+1] <-paste(get(paste("OPUT_CN_B", ucl, sep="")), "Variable Data", sep=" ")
+	}
+}
+
+for (lse in 1:CN+1)
+{
+
+OAC_Converted_Transformed_Range_VarIDList<-OAC_Converted_Transformed_Range_CPD[1]
+
+OAC_Converted_Transformed_RangeClusterList<-OAC_Converted_Transformed_Range_CPD[lse]
+colnames(OAC_Converted_Transformed_Range_VarIDList) <- paste(get(paste("OPUT_CN_B", lse-1, sep="")), "Variable Number", sep=" ")
+	
+
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[lse-1], sep="")
+	colnames(OAC_Converted_Transformed_Range_VarIDList) <- paste(get(paste("OPUT_CN_B", lse-1, sep="")), "Variable Number", sep=" ")
+	}
+
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, lse-1, sep="")
+	colnames(OAC_Converted_Transformed_Range_VarIDList) <- paste(get(paste("OPUT_CN_B", lse-1, sep="")), "Variable Number", sep=" ")
+	}
+
+OAC_Converted_Transformed_RangeClusterData <- cbind(OAC_Converted_Transformed_Range_VarIDList,OAC_Converted_Transformed_RangeClusterList)
+OAC_Converted_Transformed_RangeClusterDataOrder<-OAC_Converted_Transformed_RangeClusterData[order(-OAC_Converted_Transformed_RangeClusterData[,2]),]
+assign(paste("OAC_Converted_Transformed_RangeClusterDataOrder", lse-1, sep=""), OAC_Converted_Transformed_RangeClusterDataOrder)
+}
+
+OAC_Converted_Transformed_RangeClusterDataOrderAllCMean<-get(paste("OAC_Converted_Transformed_RangeClusterDataOrder", 1, sep=""))
+
+for (kcl in 1:CN)
+{
+OAC_Converted_Transformed_RangeClusterDataOrderKCL<-get(paste("OAC_Converted_Transformed_RangeClusterDataOrder", kcl, sep=""))
+HJ<- get(paste("OPUT_CN_B", kcl, sep=""))
+
+colnames(OAC_Converted_Transformed_RangeClusterDataOrderKCL)[1]<- paste(HJ, " Variable Number",sep="")
+colnames(OAC_Converted_Transformed_RangeClusterDataOrderKCL)[2]<- paste(HJ, " Variable Data",sep="")
+OAC_Converted_Transformed_RangeClusterDataOrderAllCMean<-cbind(OAC_Converted_Transformed_RangeClusterDataOrderAllCMean, OAC_Converted_Transformed_RangeClusterDataOrderKCL)
+}
+
+OAC_Converted_Transformed_RangeClusterDataOrderAllCMean <- OAC_Converted_Transformed_RangeClusterDataOrderAllCMean[ ,(3:ncol(OAC_Converted_Transformed_RangeClusterDataOrderAllCMean))]
+
+if(RQOAC =="NO")
+{
+write.table(OAC_Converted_Transformed_RangeClusterDataOrderAllCMean, paste("Cluster Plots/",DOCFILE_B," Profiles - Cluster Plot Data (Parent Cluster Mean).csv", sep=""), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+write.table(OAC_Converted_Transformed_RangeClusterDataOrderAllCMean, paste("Cluster Plots/",DOCFILE_B," Profiles - Cluster Plot Data (UK Mean).csv", sep=""), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+write.table(OAC_Converted_Transformed_RangeClusterDataOrderAllCMean, paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Cluster Plot Data (Parent Cluster Mean).csv", sep=""), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+}
+}
+
+Data_Max<-max(OAC_Converted_Transformed_Range_Final$Data)
+Data_Min<-min(OAC_Converted_Transformed_Range_Final$Data)
+Plot_Max_Best_C<-round_any(Data_Max, .2, f=ceiling)
+Plot_Min_Best_C<-round_any(Data_Min, -.2, f=ceiling)
+
+cNames <- c()
+for (oo in 1:CN)
+	{
+	cNames[oo] <- c(get(paste("OPUT_CN_B", oo, sep="")))
+	}
+	
+OAC_Converted_Transformed_Range_Final$clusterName<- cNames[OAC_Converted_Transformed_Range_Final$clusterNumber]
+
+OAC_Converted_Transformed_Range_Final$clusterName <- factor(OAC_Converted_Transformed_Range_Final$clusterName, levels = cNames)
+
+plot<-qplot(OAC_Converted_Transformed_Range_Final$varID, OAC_Converted_Transformed_Range_Final$Data, data=OAC_Converted_Transformed_Range_Final, geom="bar", stat="identity", position = "identity",  ylim = c(Plot_Min_Best_C, Plot_Max_Best_C), xlab="Variable Number", ylab="Distance from Mean") + aes( fill=OAC_Converted_Transformed_Range_Final$clusterRank) +theme(legend.position="none")
+
+plot<-plot + xlim (1,max(OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID) ) + ylim (Plot_Min_Best_C, Plot_Max_Best_C) + theme(axis.text.x = element_text(angle=270, hjust = 0, vjust=0.5)) + scale_x_continuous(breaks=1:max(OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID))
+
+plot + scale_fill_gradient (low=brewer.pal(5,"Blues"), space="Lab", guide="colourbar")
+
+if(RQCLUS=="SUPERGROUP")
+{
+BARPLOT_1 <-paste(BARPLOT_B," - ",BARSUB_G,"\n", sep="")
+}
+
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+BARPLOT_1 <-paste(BARPLOT_B," - ",BARSUB_C,"\n", sep="")
+}
+
+plot<-plot + facet_wrap(~ clusterName, ncol = 1) + scale_fill_gradient(low=BARPLOTPARENTLOW, high=BARPLOTPARENTHIGH, space="Lab", guide="colourbar") + ggtitle(BARPLOT_1)
+
+plot<-plot + theme(plot.title = element_text(size = 18, colour = "black", face = "bold"))
+
+plot<-plot + theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "white")
+		)
+assign(paste("ClusterMeanPlot", sep=""),plot)
+print(ClusterMeanPlot)
+assign(paste("ClusterMeanPlot", sep=""),recordPlot())
+
+graphics.off()
+
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Bar Plots.pdf", sep=""), title = paste(RADIALNAME_B), height=16, width=11, onefile=FALSE, family='Courier')
+print(ClusterMeanPlot)
+graphics.off()
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Bar Plots.pdf", sep=""), title = paste(RADIALNAME_B), height=16, width=11, onefile=FALSE, family='Courier')
+print(ClusterMeanPlot)
+graphics.off()
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Bar Plots.pdf", sep=""), title = paste(RADIALNAME_B), height=16, width=11, onefile=FALSE, family='Courier')
+print(ClusterMeanPlot)
+graphics.off()
+}
+}
+
+####################################################################################################
+# Bar Plots UK Mean ############################################################################
+####################################################################################################
+if(exists("Global_Mean_Input")=="TRUE" && RQCLUS!="SUPERGROUP")
+{
+dir.create("Cluster Plots", showWarnings = FALSE)
+
+OAC_Converted_Transformed_Range_Clus_Nu<- nrow(data.frame(unique(OAC_Converted_Transformed_Range$Cluster)))
+
+OAC_Converted_Transformed_Range_Global_Mean<- data.frame(lapply(Global_Mean_Input[,2:c(ncol(Global_Mean_Input)-1)], mean))
+
+OAC_Converted_Transformed_Range_Out_Tab<- data.frame(names(OAC_Converted_Transformed_Range_Global_Mean))
+colnames(OAC_Converted_Transformed_Range_Out_Tab)<- c("OAC_Converted_Transformed_Range_Var")
+
+for (i in 1:OAC_Converted_Transformed_Range_Clus_Nu)
+	{
+	OAC_Converted_Transformed_Range_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==i),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	OAC_Converted_Transformed_Range_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==BarPlotClus),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	OAC_Converted_Transformed_Range_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==BarPlotClus),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	}
+	
+	OAC_Converted_Transformed_Range_Mean<- data.frame(lapply(OAC_Converted_Transformed_Range_Sel, mean))
+	OAC_Converted_Transformed_Range_Out_Col<- t(OAC_Converted_Transformed_Range_Mean-OAC_Converted_Transformed_Range_Global_Mean)
+	colnames(OAC_Converted_Transformed_Range_Out_Col)<- c(paste(BARPLOT_V, i, sep=" "))
+	
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	colnames(OAC_Converted_Transformed_Range_Out_Col)<- c(paste(BARPLOT_V, BarPlotClus, sep=" "))
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	colnames(OAC_Converted_Transformed_Range_Out_Col)<- c(paste(BARPLOT_V, BarPlotClus, sep=" "))
+	}
+	OAC_Converted_Transformed_Range_Out_Tab<- data.frame(OAC_Converted_Transformed_Range_Out_Tab, OAC_Converted_Transformed_Range_Out_Col)
+	}
+	
+OAC_Converted_Transformed_Range_Out_Var_ID <- data.frame (1:nrow(OAC_Converted_Transformed_Range_Out_Tab),OAC_Converted_Transformed_Range_Out_Tab)
+colnames(OAC_Converted_Transformed_Range_Out_Var_ID) <- c("OAC_Converted_Transformed_Range_VarID",names(OAC_Converted_Transformed_Range_Out_Tab))
+colnames(OAC_Converted_Transformed_Range_Out_Var_ID) <- gsub('.', ' ',colnames(OAC_Converted_Transformed_Range_Out_Var_ID),fixed=TRUE)
+
+OAC_Converted_Transformed_Range_Final <-NULL
+
+for (i in 1:OAC_Converted_Transformed_Range_Clus_Nu)
+	{
+	if(RQCLUS=="SUPERGROUP")
+	{
+	OAC_Converted_Transformed_Range_LDat<- data.frame(i, OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID, OAC_Converted_Transformed_Range_Out_Var_ID[paste(BARPLOT_V," ",i, sep="")])
+	}
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	OAC_Converted_Transformed_Range_LDat<- data.frame(BarPlotClus, OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID, OAC_Converted_Transformed_Range_Out_Var_ID[paste(BARPLOT_V," ",BarPlotClus, sep="")])
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	OAC_Converted_Transformed_Range_LDat<- data.frame(BarPlotClus, OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID, OAC_Converted_Transformed_Range_Out_Var_ID[paste(BARPLOT_V," ",BarPlotClus, sep="")])
+	}
+	names(OAC_Converted_Transformed_Range_LDat)<- c("clusternumber", "ID","data")
+	OAC_Converted_Transformed_Range_LDat$clusterrank <- ave(OAC_Converted_Transformed_Range_LDat$data, FUN=rank)
+	OAC_Converted_Transformed_Range_Final <- rbind(OAC_Converted_Transformed_Range_Final, OAC_Converted_Transformed_Range_LDat) 
+	}
+
+names(OAC_Converted_Transformed_Range_Final)<- c("clusterNumber", "varID", "Data", "clusterRank")
+
+OAC_Converted_Transformed_Range_CPD<-dcast(OAC_Converted_Transformed_Range_Final, varID ~ clusterNumber, value.var = "Data")
+colnames(OAC_Converted_Transformed_Range_CPD)[1] <-"Variable Number"
+for (ucl in 1:CN)
+{
+	if(RQCLUS=="SUPERGROUP")
+	{
+	colnames(OAC_Converted_Transformed_Range_CPD)[ucl+1] <-paste(get(paste("OPUT_CN_B", ucl, sep="")), "Variable Data", sep=" ")
+	}
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[ucl], sep="")
+	colnames(OAC_Converted_Transformed_Range_CPD)[ucl+1] <-paste(get(paste("OPUT_CN_B", ucl, sep="")), "Variable Data", sep=" ")
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, ucl, sep="")
+	colnames(OAC_Converted_Transformed_Range_CPD)[ucl+1] <-paste(get(paste("OPUT_CN_B", ucl, sep="")), "Variable Data", sep=" ")
+	}
+}
+
+for (lse in 1:CN+1)
+{
+
+OAC_Converted_Transformed_Range_VarIDList<-OAC_Converted_Transformed_Range_CPD[1]
+
+OAC_Converted_Transformed_RangeClusterList<-OAC_Converted_Transformed_Range_CPD[lse]
+colnames(OAC_Converted_Transformed_Range_VarIDList) <- paste(get(paste("OPUT_CN_B", lse-1, sep="")), "Variable Number", sep=" ")
+	
+
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[lse-1], sep="")
+	colnames(OAC_Converted_Transformed_Range_VarIDList) <- paste(get(paste("OPUT_CN_B", lse-1, sep="")), "Variable Number", sep=" ")
+	}
+
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, lse-1, sep="")
+	colnames(OAC_Converted_Transformed_Range_VarIDList) <- paste(get(paste("OPUT_CN_B", lse-1, sep="")), "Variable Number", sep=" ")
+	}
+
+OAC_Converted_Transformed_RangeClusterData <- cbind(OAC_Converted_Transformed_Range_VarIDList,OAC_Converted_Transformed_RangeClusterList)
+OAC_Converted_Transformed_RangeClusterDataOrder<-OAC_Converted_Transformed_RangeClusterData[order(-OAC_Converted_Transformed_RangeClusterData[,2]),]
+assign(paste("OAC_Converted_Transformed_RangeClusterDataOrder", lse-1, sep=""), OAC_Converted_Transformed_RangeClusterDataOrder)
+}
+
+OAC_Converted_Transformed_RangeClusterDataOrderAllGMean<-get(paste("OAC_Converted_Transformed_RangeClusterDataOrder", 1, sep=""))
+
+for (kcl in 1:CN)
+{
+OAC_Converted_Transformed_RangeClusterDataOrderKCL<-get(paste("OAC_Converted_Transformed_RangeClusterDataOrder", kcl, sep=""))
+HJ<- get(paste("OPUT_CN_B", kcl, sep=""))
+
+colnames(OAC_Converted_Transformed_RangeClusterDataOrderKCL)[1]<- paste(HJ, " Variable Number",sep="")
+colnames(OAC_Converted_Transformed_RangeClusterDataOrderKCL)[2]<- paste(HJ, " Variable Data",sep="")
+OAC_Converted_Transformed_RangeClusterDataOrderAllGMean<-cbind(OAC_Converted_Transformed_RangeClusterDataOrderAllGMean, OAC_Converted_Transformed_RangeClusterDataOrderKCL)
+}
+
+OAC_Converted_Transformed_RangeClusterDataOrderAllGMean <- OAC_Converted_Transformed_RangeClusterDataOrderAllGMean[ ,(3:ncol(OAC_Converted_Transformed_RangeClusterDataOrderAllGMean))]
+
+if(RQOAC =="NO")
+{
+write.table(OAC_Converted_Transformed_RangeClusterDataOrderAllGMean, paste("Cluster Plots/",DOCFILE_B," Profiles - Cluster Plot Data (UK Mean).csv", sep=""), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+write.table(OAC_Converted_Transformed_RangeClusterDataOrderAllGMean, paste("Cluster Plots/",DOCFILE_B," Profiles - Cluster Plot Data (UK Mean).csv", sep=""), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+write.table(OAC_Converted_Transformed_RangeClusterDataOrderAllGMean, paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Cluster Plot Data (UK Mean).csv", sep=""), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+}
+}
+
+Data_Max<-max(OAC_Converted_Transformed_Range_Final$Data)
+Data_Min<-min(OAC_Converted_Transformed_Range_Final$Data)
+Plot_Max_Best_G<-round_any(Data_Max, .2, f=ceiling)
+Plot_Min_Best_G<-round_any(Data_Min, -.2, f=ceiling)
+
+cNames <- c()
+for (oo in 1:CN)
+	{
+	cNames[oo] <- c(get(paste("OPUT_CN_B", oo, sep="")))
+	}
+	
+OAC_Converted_Transformed_Range_Final$clusterName<- cNames[OAC_Converted_Transformed_Range_Final$clusterNumber]
+
+OAC_Converted_Transformed_Range_Final$clusterName <- factor(OAC_Converted_Transformed_Range_Final$clusterName, levels = cNames)
+
+plot<-qplot(OAC_Converted_Transformed_Range_Final$varID, OAC_Converted_Transformed_Range_Final$Data, data=OAC_Converted_Transformed_Range_Final, geom="bar", stat="identity", position = "identity",  ylim = c(Plot_Min_Best_G, Plot_Max_Best_G), xlab="Variable Number", ylab="Distance from Mean") + aes( fill=OAC_Converted_Transformed_Range_Final$clusterRank) +theme(legend.position="none")
+
+plot<-plot + xlim (1,max(OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID) ) + ylim (Plot_Min_Best_G, Plot_Max_Best_G) + theme(axis.text.x = element_text(angle=270, hjust = 0, vjust=0.5)) + scale_x_continuous(breaks=1:max(OAC_Converted_Transformed_Range_Out_Var_ID$OAC_Converted_Transformed_Range_VarID))
+
+plot + scale_fill_gradient (low=brewer.pal(5,"Blues"), space="Lab", guide="colourbar")
+
+if(RQCLUS=="SUPERGROUP")
+{
+BARPLOT_2 <-paste(BARPLOT_B," - ",BARSUB_G,"\n", sep="")
+}
+
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+BARPLOT_2 <-paste(BARPLOT_B," - ",BARSUB_G,"\n", sep="")
+}
+
+plot<-plot + facet_wrap(~ clusterName, ncol = 1) + scale_fill_gradient(low=BARCOLOURLOW, high=BARCOLOURHIGH, space="Lab", guide="colourbar") + ggtitle(BARPLOT_2)
+
+plot<-plot + theme(plot.title = element_text(size = 18, colour = "black", face = "bold"))
+
+plot<-plot + theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(colour = "white")
+		)
+assign(paste("GlobalMeanPlot", sep=""),plot)
+print(GlobalMeanPlot)
+assign(paste("GlobalMeanPlot", sep=""),recordPlot())
+graphics.off()
+
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Bar Plots.pdf", sep=""), title = paste(RADIALNAME_B), height=16, width=11, onefile=TRUE, family='Courier')
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Bar Plots.pdf", sep=""), title = paste(RADIALNAME_B), height=16, width=11, onefile=TRUE, family='Courier')
+
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Bar Plots.pdf", sep=""), title = paste(RADIALNAME_B), height=16, width=11, onefile=TRUE, family='Courier')
+}
+}
+
+print(GlobalMeanPlot)
+print(ClusterMeanPlot)
+graphics.off()
+}
+
+####################################################################################################
+# Radial Plots #####################################################################################
+####################################################################################################
+
+RADIALMEANCOL <- paste("red")
+if(RQCLUS!="SUPERGROUP"){RADIALMEANCOL <- paste("chocolate1")}
+
+OAC_Converted_Transformed_Range_Cluster_Mean_Clus_Nu<- nrow(data.frame(unique(OAC_Converted_Transformed_Range$Cluster)))
+
+OAC_Converted_Transformed_Range_Cluster_Mean_Global_Mean<- data.frame(lapply(OAC_Converted_Transformed_Range[,1:c(ncol(OAC_Converted_Transformed_Range)-1)], mean))
+
+OAC_Converted_Transformed_Range_Cluster_Mean_Out_Tab<- data.frame(names(OAC_Converted_Transformed_Range_Cluster_Mean_Global_Mean))
+colnames(OAC_Converted_Transformed_Range_Cluster_Mean_Out_Tab)<- c("OAC_Converted_Transformed_Range_Cluster_Mean_Var")
+
+for (i in 1:OAC_Converted_Transformed_Range_Cluster_Mean_Clus_Nu)
+	{
+	OAC_Converted_Transformed_Range_Cluster_Mean_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==i),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	if(RQCLUS=="GROUP")
+	{		
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	OAC_Converted_Transformed_Range_Cluster_Mean_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==BarPlotClus),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	}
+	if(RQCLUS=="SUBGROUP")
+	{		
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	OAC_Converted_Transformed_Range_Cluster_Mean_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==BarPlotClus),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	}
+	OAC_Converted_Transformed_Range_Cluster_Mean_Mean<- data.frame(lapply(OAC_Converted_Transformed_Range_Cluster_Mean_Sel, mean))
+	OAC_Converted_Transformed_Range_Cluster_Mean_Out_Col<- t(OAC_Converted_Transformed_Range_Cluster_Mean_Mean-OAC_Converted_Transformed_Range_Cluster_Mean_Global_Mean)
+	colnames(OAC_Converted_Transformed_Range_Cluster_Mean_Out_Col)<- c(paste("Cluster_", i, sep=""))
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	colnames(OAC_Converted_Transformed_Range_Cluster_Mean_Out_Col)<- c(paste("Cluster_", BarPlotClus, sep=""))
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	colnames(OAC_Converted_Transformed_Range_Cluster_Mean_Out_Col)<- c(paste("Cluster_", BarPlotClus, sep=""))
+	}
+	OAC_Converted_Transformed_Range_Cluster_Mean_Out_Tab<- data.frame(OAC_Converted_Transformed_Range_Cluster_Mean_Out_Tab, OAC_Converted_Transformed_Range_Cluster_Mean_Out_Col)
+	}
+
+OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID <- data.frame (1:nrow(OAC_Converted_Transformed_Range_Cluster_Mean_Out_Tab),OAC_Converted_Transformed_Range_Cluster_Mean_Out_Tab)
+colnames(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID) <- c("OAC_Converted_Transformed_Range_Cluster_Mean_VarID",names(OAC_Converted_Transformed_Range_Cluster_Mean_Out_Tab))
+
+OAC_Converted_Transformed_Range_Cluster_Mean_Zero_Line<- data.frame(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID$OAC_Converted_Transformed_Range_Cluster_Mean_VarID, 0)
+names(OAC_Converted_Transformed_Range_Cluster_Mean_Zero_Line)<- c("OAC_Converted_Transformed_Range_Cluster_Mean_VarID", "OAC_Converted_Transformed_Range_Cluster_Mean_Zero")
+
+for (nn in 1:CN) {assign(paste("RPLOT", nn, sep=""), c(0))}
+
+RPLOTList <-list()
+
+for (ggg in 1:OAC_Converted_Transformed_Range_Cluster_Mean_Clus_Nu)
+{
+jjj<-ggg+2
+HJ<- get(paste("OPUT_CN_B", ggg, sep=""))
+RADIALTITLE <- paste(HJ, sep="")
+	
+RADIALSUB_1 <-paste(RADIALSUB_B," - ",BARSUB_G, sep="")
+
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+RADIALSUB_1 <-paste(RADIALSUB_B," - ",BARSUB_C, sep="")
+}
+
+par(cex.main=1.5)
+
+radial.plot(OAC_Converted_Transformed_Range_Cluster_Mean_Zero_Line$OAC_Converted_Transformed_Range_Cluster_Mean_Zero, labels=c(OAC_Converted_Transformed_Range_Cluster_Mean_Zero_Line$OAC_Converted_Transformed_Range_Cluster_Mean_VarID), start=0,clockwise=TRUE, rp.type="p", line.col=RADIALMEANCOL,lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, mar=c(4,4,6,4), radial.lim=range(Plot_Min_Best_C,Plot_Max_Best_C))
+
+radial.plot(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID$OAC_Converted_Transformed_Range_Cluster_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=RADIALCOLOUR,lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_C,Plot_Max_Best_C),  mar=c(4,4,6,4), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE, line=4), add=T)
+mtext(RADIALSUB_1, line=2.5)
+
+assign(paste("RPLOT",ggg, sep=""),recordPlot())
+
+RPLOTList <- list(RPLOTList, get(paste("RPLOT", ggg, sep="")))
+
+graphics.off()
+}
+
+dir.create("Cluster Plots", showWarnings = FALSE)
+
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Individual Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=10, height=10)
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Individual UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=10, height=10)
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Radial Plots (Individual Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=10, height=10)
+}
+}
+RPLOTList
+dev.off()
+
+dir.create("Cluster Plots", showWarnings = FALSE)
+
+if (CN<=8)
+{
+
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Radial Plots (Combined Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+}
+
+par(mfrow = c(2,4), cex.main=2.5, xpd=TRUE, oma=c(0,0,5,0))
+
+for (ggg in 1:OAC_Converted_Transformed_Range_Cluster_Mean_Clus_Nu)
+{
+jjj<-ggg+2
+
+HJ<- get(paste("OPUT_CN_B", ggg, sep=""))
+RADIALTITLE <- paste(HJ, sep="")
+	
+RADIALNAME_1 <-paste(RADIALNAME_B," - ",BARSUB_G, sep="")
+
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+RADIALNAME_1 <-paste(RADIALNAME_B," - ",BARSUB_C, sep="")
+}
+
+radial.plot(OAC_Converted_Transformed_Range_Cluster_Mean_Zero_Line$OAC_Converted_Transformed_Range_Cluster_Mean_Zero, labels=c(OAC_Converted_Transformed_Range_Cluster_Mean_Zero_Line$OAC_Converted_Transformed_Range_Cluster_Mean_VarID), start=0,clockwise=TRUE, rp.type="p", line.col=RADIALMEANCOL,lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_C,Plot_Max_Best_C), mar=c(5,5,15,5))
+
+radial.plot(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID$OAC_Converted_Transformed_Range_Cluster_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=RADIALCOLOUR,lwd=3, show.grid=TRUE, grid.col="grey",
+point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_C,Plot_Max_Best_C), mar=c(5,5,15,5), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE), add=T)
+}
+title(main=paste(RADIALNAME_1, sep=""), outer=TRUE, line=-2, cex.main=6)
+graphics.off()
+}
+
+if (CN>8)
+
+{
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Radial Plots (Combined Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+}
+
+par(mfrow = c(2,4), cex.main=2.5, xpd=FALSE, mar=c(2,2,2,2))
+
+for (ggg in 1:OAC_Converted_Transformed_Range_Cluster_Mean_Clus_Nu)
+{
+jjj<-ggg+2
+
+HJ<- get(paste("OPUT_CN_B", ggg, sep=""))
+RADIALTITLE <- paste(HJ, sep="")
+
+radial.plot(OAC_Converted_Transformed_Range_Cluster_Mean_Zero_Line$OAC_Converted_Transformed_Range_Cluster_Mean_Zero, labels=c(OAC_Converted_Transformed_Range_Cluster_Mean_Zero_Line$OAC_Converted_Transformed_Range_Cluster_Mean_VarID), start=0,clockwise=TRUE, rp.type="p", line.col=RADIALMEANCOL,lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_C,Plot_Max_Best_C), mar=c(5,5,15,5))
+
+radial.plot(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID$OAC_Converted_Transformed_Range_Cluster_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=RADIALCOLOUR,lwd=3, show.grid=TRUE, grid.col="grey",
+point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_C,Plot_Max_Best_C), mar=c(5,5,15,5), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE), add=T)
+}
+graphics.off()
+}
+
+if(exists("Global_Mean_Input")=="TRUE" && RQCLUS!="SUPERGROUP")
+{
+
+OAC_Converted_Transformed_Range_Global_Mean_Clus_Nu<- nrow(data.frame(unique(OAC_Converted_Transformed_Range$Cluster)))
+
+OAC_Converted_Transformed_Range_Global_Mean_Global_Mean<- data.frame(lapply(Global_Mean_Input[,2:c(ncol(Global_Mean_Input)-1)], mean))
+
+OAC_Converted_Transformed_Range_Global_Mean_Out_Tab<- data.frame(names(OAC_Converted_Transformed_Range_Global_Mean_Global_Mean))
+colnames(OAC_Converted_Transformed_Range_Global_Mean_Out_Tab)<- c("OAC_Converted_Transformed_Range_Global_Mean_Var")
+
+for (i in 1:OAC_Converted_Transformed_Range_Global_Mean_Clus_Nu)
+	{
+	OAC_Converted_Transformed_Range_Global_Mean_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==i),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	if(RQCLUS=="GROUP")
+	{		
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	OAC_Converted_Transformed_Range_Global_Mean_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==BarPlotClus),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	}
+	if(RQCLUS=="SUBGROUP")
+	{		
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	OAC_Converted_Transformed_Range_Global_Mean_Sel<- OAC_Converted_Transformed_Range[which(OAC_Converted_Transformed_Range$Cluster==BarPlotClus),1:c(ncol(OAC_Converted_Transformed_Range)-1)]
+	}
+	OAC_Converted_Transformed_Range_Global_Mean_Mean<- data.frame(lapply(OAC_Converted_Transformed_Range_Global_Mean_Sel, mean))
+	OAC_Converted_Transformed_Range_Global_Mean_Out_Col<- t(OAC_Converted_Transformed_Range_Global_Mean_Mean-OAC_Converted_Transformed_Range_Global_Mean_Global_Mean)
+	colnames(OAC_Converted_Transformed_Range_Global_Mean_Out_Col)<- c(paste("Cluster_", i, sep=""))
+	if(RQCLUS=="GROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, letters[i], sep="")
+	colnames(OAC_Converted_Transformed_Range_Global_Mean_Out_Col)<- c(paste("Cluster_", BarPlotClus, sep=""))
+	}
+	if(RQCLUS=="SUBGROUP")
+	{
+	BarPlotClus<-paste(Best_Cluster_Input, i, sep="")
+	colnames(OAC_Converted_Transformed_Range_Global_Mean_Out_Col)<- c(paste("Cluster_", BarPlotClus, sep=""))
+	}
+	OAC_Converted_Transformed_Range_Global_Mean_Out_Tab<- data.frame(OAC_Converted_Transformed_Range_Global_Mean_Out_Tab, OAC_Converted_Transformed_Range_Global_Mean_Out_Col)
+	}
+
+OAC_Converted_Transformed_Range_Global_Mean_Out_VarID <- data.frame (1:nrow(OAC_Converted_Transformed_Range_Global_Mean_Out_Tab),OAC_Converted_Transformed_Range_Global_Mean_Out_Tab)
+colnames(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID) <- c("OAC_Converted_Transformed_Range_Global_Mean_VarID",names(OAC_Converted_Transformed_Range_Global_Mean_Out_Tab))
+
+OAC_Converted_Transformed_Range_Global_Mean_Zero_Line<- data.frame(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID$OAC_Converted_Transformed_Range_Global_Mean_VarID, 0)
+names(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line)<- c("OAC_Converted_Transformed_Range_Global_Mean_VarID", "OAC_Converted_Transformed_Range_Global_Mean_Zero")
+
+for (nn in 1:CN) {assign(paste("RPLOT_G", nn, sep=""), c(0))}
+
+RPLOTList <-list()
+
+for (ggg in 1:OAC_Converted_Transformed_Range_Global_Mean_Clus_Nu)
+{
+jjj<-ggg+2
+HJ<- get(paste("OPUT_CN_B", ggg, sep=""))
+RADIALTITLE <- paste(HJ, sep="")
+
+RADIALSUB_2 <-paste(RADIALSUB_B," - ",BARSUB_G, sep="")
+
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+RADIALSUB_2 <-paste(RADIALSUB_B," - ",BARSUB_G, sep="")
+}
+
+par(cex.main=1.5)
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_Zero, labels=c(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p", line.col="red",lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, mar=c(4,4,6,4), radial.lim=range(Plot_Min_Best_G,Plot_Max_Best_G))
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=RADIALCOLOUR,lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_G,Plot_Max_Best_G),  mar=c(4,4,6,4), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE, line=4), add=T)
+mtext(RADIALSUB_2, line=2.5)
+
+assign(paste("RPLOT_G",ggg, sep=""),recordPlot())
+
+RPLOTList <- list(RPLOTList, get(paste("RPLOT_G", ggg, sep="")))
+
+graphics.off()
+}
+
+dir.create("Cluster Plots", showWarnings = FALSE)
+
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Individual UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=10, height=10)
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Individual UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=10, height=10)
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Radial Plots (Individual UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=10, height=10)
+}
+}
+print(RPLOTList)
+dev.off()
+
+dir.create("Cluster Plots", showWarnings = FALSE)
+
+if (CN<=8)
+{
+
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Radial Plots (Combined UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+}
+
+par(mfrow = c(2,4), cex.main=2.5, xpd=TRUE, oma=c(0,0,5,0))
+
+for (ggg in 1:OAC_Converted_Transformed_Range_Global_Mean_Clus_Nu)
+{
+jjj<-ggg+2
+
+HJ<- get(paste("OPUT_CN_B", ggg, sep=""))
+RADIALTITLE <- paste(HJ, sep="")
+
+RADIALNAME_2 <-paste(RADIALNAME_B," - ",BARSUB_G, sep="")
+
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+RADIALNAME_2 <-paste(RADIALNAME_B," - ",BARSUB_G, sep="")
+}
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_Zero, labels=c(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p", line.col="red",lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_G,Plot_Max_Best_G), mar=c(5,5,15,5))
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=RADIALCOLOUR,lwd=3, show.grid=TRUE, grid.col="grey",
+point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_G,Plot_Max_Best_G), mar=c(5,5,15,5), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE), add=T)
+
+
+}
+title(main=paste(RADIALNAME_2, sep=""), outer=TRUE, line=-2, cex.main=6)
+graphics.off()
+}
+
+if (CN>8)
+{
+
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Radial Plots (Combined UK Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+}
+
+par(mfrow = c(2,4), cex.main=2.5, xpd=FALSE, mar=c(2,2,2,2))
+
+for (ggg in 1:OAC_Converted_Transformed_Range_Global_Mean_Clus_Nu)
+{
+jjj<-ggg+2
+
+HJ<- get(paste("OPUT_CN_B", ggg, sep=""))
+RADIALTITLE <- paste(HJ, sep="")
+	
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_Zero, labels=c(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p", line.col="red",lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_G,Plot_Max_Best_G), mar=c(5,5,15,5))
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=RADIALCOLOUR,lwd=3, show.grid=TRUE, grid.col="grey",
+point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best_G,Plot_Max_Best_G), mar=c(5,5,15,5), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE), add=T)
+}
+graphics.off()
+}
+
+Plot_Min_Best <- min(Plot_Min_Best_C,Plot_Min_Best_G)
+Plot_Max_Best <- max(Plot_Max_Best_C,Plot_Max_Best_G)
+
+for (nn in 1:CN) {assign(paste("RPLOT_C", nn, sep=""), c(0))}
+
+RPLOTList <-list()
+
+for (ggg in 1:OAC_Converted_Transformed_Range_Global_Mean_Clus_Nu)
+{
+jjj<-ggg+2
+HJ<- get(paste("OPUT_CN_B", ggg, sep=""))
+RADIALTITLE <- paste(HJ, sep="")
+
+RADIALSUB_3 <-paste(RADIALSUB_B," - ",BARSUB_CG, sep="")
+
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+RADIALSUB_3 <-paste(RADIALSUB_B," - ",BARSUB_CG, sep="")
+}
+
+par(cex.main=1.5)
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_Zero, labels=c(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p", line.col="red",lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, mar=c(4,4,6,4), radial.lim=range(Plot_Min_Best,Plot_Max_Best))
+
+radial.plot(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID$OAC_Converted_Transformed_Range_Cluster_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=BARCOLOURLOW,lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col=BARCOLOURLOW,show.centroid=FALSE, radial.lim=range(Plot_Min_Best,Plot_Max_Best),  mar=c(4,4,6,4), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE, line=4), add=T)
+mtext(RADIALSUB_3, line=2.5)
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=RADIALCOLOUR,lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best,Plot_Max_Best),  mar=c(4,4,6,4), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE, line=4), add=T)
+mtext(RADIALSUB_3, line=2.5)
+
+assign(paste("RPLOT_C",ggg, sep=""),recordPlot())
+
+RPLOTList <- list(RPLOTList, get(paste("RPLOT_C", ggg, sep="")))
+
+graphics.off()
+}
+
+dir.create("Cluster Plots", showWarnings = FALSE)
+
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Individual UK and Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=10, height=10)
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Individual UK and Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=10, height=10)
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Radial Plots (Individual UK and Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=10, height=10)
+}
+}
+print(RPLOTList)
+graphics.off()
+
+dir.create("Cluster Plots", showWarnings = FALSE)
+
+if (CN<=8)
+{
+
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK and Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK and Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Radial Plots (Combined UK and Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+}
+
+par(mfrow = c(2,4), cex.main=2.5, xpd=TRUE, oma=c(0,0,5,0))
+
+for (ggg in 1:OAC_Converted_Transformed_Range_Global_Mean_Clus_Nu)
+{
+jjj<-ggg+2
+
+HJ<- get(paste("OPUT_CN_B", ggg, sep=""))
+RADIALTITLE <- paste(HJ, sep="")
+
+RADIALNAME_3 <-paste(RADIALNAME_B," - ",BARSUB_CG, sep="")
+
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+RADIALNAME_3 <-paste(RADIALNAME_B," - ",BARSUB_CG, sep="")
+}
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_Zero, labels=c(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p", line.col="red",lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best,Plot_Max_Best), mar=c(5,5,15,5))
+
+radial.plot(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID$OAC_Converted_Transformed_Range_Cluster_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=BARCOLOURLOW,lwd=3, show.grid=TRUE, grid.col="grey",
+point.symbols=16,point.col=BARCOLOURLOW,show.centroid=FALSE, radial.lim=range(Plot_Min_Best,Plot_Max_Best), mar=c(5,5,15,5), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE), add=T)
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=RADIALCOLOUR,lwd=3, show.grid=TRUE, grid.col="grey",
+point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best,Plot_Max_Best), mar=c(5,5,15,5), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE), add=T)
+}
+title(main=paste(RADIALNAME_3, sep=""), outer=TRUE, line=-2, cex.main=6)
+graphics.off()
+}
+
+if (CN>8)
+{
+if(RQOAC =="NO")	
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK and Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+
+if(RQOAC =="YES")
+{
+if(RQCLUS=="SUPERGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," Profiles - Radial Plots (Combined UK and Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+if(RQCLUS=="GROUP" | RQCLUS=="SUBGROUP")
+{
+pdf(file = paste("Cluster Plots/",DOCFILE_B," ",Best_Cluster_Input, " Profiles - Radial Plots (Combined UK and Parent Cluster Mean).pdf", sep=""), title = RADIALNAME_B, family='Courier', width=35, height=20)
+}
+}
+
+par(mfrow = c(2,4), cex.main=2.5, xpd=FALSE, mar=c(2,2,2,2))
+
+for (ggg in 1:OAC_Converted_Transformed_Range_Global_Mean_Clus_Nu)
+{
+jjj<-ggg+2
+
+HJ<- get(paste("OPUT_CN_B", ggg, sep=""))
+RADIALTITLE <- paste(HJ, sep="")
+	
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_Zero, labels=c(OAC_Converted_Transformed_Range_Global_Mean_Zero_Line$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p", line.col="red",lwd=3, show.grid=TRUE, grid.col="grey", point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best,Plot_Max_Best), mar=c(5,5,15,5))
+
+radial.plot(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Cluster_Mean_Out_VarID$OAC_Converted_Transformed_Range_Cluster_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=BARCOLOURLOW,lwd=3, show.grid=TRUE, grid.col="grey",
+point.symbols=16,point.col=BARCOLOURLOW,show.centroid=FALSE, radial.lim=range(Plot_Min_Best,Plot_Max_Best), mar=c(5,5,15,5), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE), add=T)
+
+radial.plot(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID[,jjj], labels=c(OAC_Converted_Transformed_Range_Global_Mean_Out_VarID$OAC_Converted_Transformed_Range_Global_Mean_VarID), start=0,clockwise=TRUE, rp.type="p&s", line.col=RADIALCOLOUR,lwd=3, show.grid=TRUE, grid.col="grey",
+point.symbols=16,point.col="black",show.centroid=FALSE, radial.lim=range(Plot_Min_Best,Plot_Max_Best), mar=c(5,5,15,5), title(main=get(paste("RADIALTITLE", sep="")), outer=FALSE), add=T)
+}
+graphics.off()
+}
+}
