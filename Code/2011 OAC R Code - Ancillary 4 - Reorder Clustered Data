@@ -1,0 +1,128 @@
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+# Code to Create the 2011 Area Classification for Output Areas (2011 OAC)
+# Feel free to share and reuse with attribution
+# Ancillary 4 - Reorder Clustered Data
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+
+rm(list = ls()) 
+gc()
+
+####################################################################################################
+# Setup ############################################################################################
+####################################################################################################
+
+#Library packages required
+library(car)
+library(gtools)
+
+#Set Working Directory
+setwd("/Users/Chris/Documents/2011 OAC")
+
+#New order for Clusters
+R_ORD1<-4
+R_ORD2<-5
+R_ORD3<-2
+R_ORD4<-6
+R_ORD5<-1
+R_ORD6<-3
+R_ORD7<-7
+R_ORD8<-8
+
+load("OAC_Converted_Transformed_Range_Raw_Cluster_Data.RData")
+
+OAC_Converted_Transformed_Range_Best_WSS_A <- OAC_Converted_Transformed_Range_Best_WSS_A[2:nrow(OAC_Converted_Transformed_Range_Best_WSS_A),]
+names(OAC_Converted_Transformed_Range_Best_WSS_A)<- c("Run_Number", "Mean_Within_Sum_of_Squares", "Total_Within_Sum_of_Squares", "Total_Between_Cluster_Sum_of_Squares", "Total_Within_&_Between_Sum_of_Squares")
+
+BestWSS_Centers<-as.data.frame(BestWSS$centers)
+
+Cluster <-BestWSS$cluster
+
+for (re in 1:CN)
+	{
+	Cluster<-gsub(re,paste(letters[re],letters[re],sep=""),Cluster)
+	}
+
+for (re in 1:CN)
+	{
+	Cluster<-gsub(paste(letters[re],letters[re],sep=""),get(paste("R_ORD",re,sep="")), Cluster)
+	}
+
+ClusterPlots <- Cluster
+
+if(RQCLUS=="GROUP")
+{
+OAC_Converted_Transformed_Range_Best_Cluster_Ltr<-Cluster
+for (rcn in 1:CN)
+{
+OAC_Converted_Transformed_Range_Best_Cluster_Ltr[OAC_Converted_Transformed_Range_Best_Cluster_Ltr == rcn] <- letters[rcn]
+}
+Cluster <- sprintf("%s%s", Best_Cluster_Input, OAC_Converted_Transformed_Range_Best_Cluster_Ltr)
+}
+
+if(RQCLUS=="SUBGROUP")
+{
+OAC_Converted_Transformed_Range_Best_Cluster_LtrNum<-Cluster
+for (rcn in 1:CN)
+{
+OAC_Converted_Transformed_Range_Best_Cluster_LtrNum[OAC_Converted_Transformed_Range_Best_Cluster_LtrNum == rcn] <- rcn
+}
+Cluster <- sprintf("%s%s", Best_Cluster_Input, OAC_Converted_Transformed_Range_Best_Cluster_LtrNum)
+}
+
+OAC_Converted_Transformed_Range_Data <- data.frame(OAC_Converted_Transformed_Range)
+
+OAC_Converted_Transformed_Range<- data.frame(OAC_Converted_Transformed_Range, Cluster)
+
+Within_Cluster_Sum_of_Squares <-BestWSS$withinss
+
+Points_Within_Cluster <-BestWSS$size
+
+RowNumber <- data.frame(Cluster)
+
+RowNumber <- nrow(RowNumber)
+
+ColNumber <- ncol(OAC_Converted_Transformed_Range_Input)
+
+OAC_Converted_Transformed_Range_Cluster_Metadata <-data.frame(Within_Cluster_Sum_of_Squares, Points_Within_Cluster, BestWSS$centers)
+colnames(OAC_Converted_Transformed_Range_Cluster_Metadata)[1:2]<-c("Within_Cluster_Sum_of_Squares","Number_Assigned")
+OAC_Converted_Transformed_Range_Cluster_Metadata$Mean_Cluster_Within_Sum_of_Squares<-OAC_Converted_Transformed_Range_Cluster_Metadata[,1]/OAC_Converted_Transformed_Range_Cluster_Metadata[,2]
+OAC_Converted_Transformed_Range_Cluster_Metadata<-rbind(OAC_Converted_Transformed_Range_Cluster_Metadata, sapply(OAC_Converted_Transformed_Range_Cluster_Metadata, mean))
+OAC_Converted_Transformed_Range_Cluster_Metadata_Cluster<-mixedsort(unique(OAC_Converted_Transformed_Range$Cluster))
+OAC_Converted_Transformed_Range_Cluster_Metadata_Cluster<-as.matrix(OAC_Converted_Transformed_Range_Cluster_Metadata_Cluster)
+OAC_Converted_Transformed_Range_Cluster_Metadata$Cluster<-rbind(OAC_Converted_Transformed_Range_Cluster_Metadata_Cluster,"Mean")
+OAC_Converted_Transformed_Range_Cluster_MetadataCol<-ncol(OAC_Converted_Transformed_Range_Cluster_Metadata)
+OAC_Converted_Transformed_Range_Cluster_MetadataMean<-OAC_Converted_Transformed_Range_Cluster_MetadataCol-1
+OAC_Converted_Transformed_Range_Clusters_LastVar<-OAC_Converted_Transformed_Range_Cluster_MetadataCol-2
+OAC_Converted_Transformed_Range_Cluster_Metadata<-OAC_Converted_Transformed_Range_Cluster_Metadata[,c(OAC_Converted_Transformed_Range_Cluster_MetadataCol,1:2, OAC_Converted_Transformed_Range_Cluster_MetadataMean, 3:OAC_Converted_Transformed_Range_Clusters_LastVar)] 
+
+MetaClusterOrder <- OAC_Converted_Transformed_Range_Cluster_Metadata$Cluster
+OAC_Converted_Transformed_Range_Cluster_Metadata$Cluster[1:CN]<-1:CN
+
+for (re in 1:CN)
+	{
+	OAC_Converted_Transformed_Range_Cluster_Metadata$Cluster<-gsub(re,paste(letters[re],letters[re],sep=""),OAC_Converted_Transformed_Range_Cluster_Metadata$Cluster)
+	}
+
+for (re in 1:CN)
+	{
+	OAC_Converted_Transformed_Range_Cluster_Metadata$Cluster<-gsub(paste(letters[re],letters[re],sep=""),get(paste("R_ORD",re,sep="")), OAC_Converted_Transformed_Range_Cluster_Metadata$Cluster)
+	}
+
+OAC_Converted_Transformed_Range_Cluster_Metadata<-OAC_Converted_Transformed_Range_Cluster_Metadata[order(OAC_Converted_Transformed_Range_Cluster_Metadata[,1]),]
+
+OAC_Converted_Transformed_Range_Cluster_Metadata$Cluster<-MetaClusterOrder
+
+OAC_Converted_Transformed_Range_CSV_Output<-cbind(OA, OAC_Converted_Transformed_Range)
+
+dir.create("Cluster Data", showWarnings = FALSE)
+
+write.table(OAC_Converted_Transformed_Range_CSV_Output, paste("Cluster Data/OAC_Converted_Transformed_Range_", i, "_KMeans_Runs.csv", sep = ""), sep = ",", row.names= FALSE, col.names = TRUE, qmethod = "double")
+
+write.table(OAC_Converted_Transformed_Range_Cluster_Metadata, paste("Cluster Data/OAC_Converted_Transformed_Range_Cluster_Metadata_", i, "_Runs.csv", sep = ""), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+
+save.image("OAC_Converted_Transformed_Range_Clustered.RData")
+
+####################################################################################################
+# End ##############################################################################################
+####################################################################################################
+
