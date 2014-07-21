@@ -1,0 +1,360 @@
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+# Code to Create the 2011 Area Classification for Output Areas
+# Feel free to share and reuse with attribution
+# Ancillary 1 - Cluster Assignment to Local Authorities and Regions/Countries
+#####    #####     #####    #####     #####    #####     #####    #####     #####    #####     #####
+
+rm(list = ls()) 
+gc()
+
+##########LIBRARY PACKAGES REQUIRED##########
+require("foreign")
+
+##########WORKSPACE SELECTION##########
+setwd("/Users/Chris/Documents/OAC")
+
+OAC_Input <- read.csv("2011 OAC Clusters.csv",head=T)
+
+UKOA<-nrow(OAC_Input)
+
+LA_Files <- list.files(paste(getwd(),"/LA/",sep=""),pattern = "\\.(csv|CSV)$")
+ 
+SprGrp<-sort(unique(OAC_Input$SPRGRP))
+Grp<-sort(unique(OAC_Input$GRP))
+Sub<-sort(unique(OAC_Input$SUBGRP))
+
+SprGrpTotals<-as.data.frame(table(OAC_Input$SPRGRP))
+GrpTotals<-as.data.frame(table(OAC_Input$GRP))
+SubTotals<-as.data.frame(table(OAC_Input$SUBGRP))
+
+UKSPRSED <- sum(OAC_Input$SPR_SED)/UKOA
+UKGRPSED <- sum(OAC_Input$GRP_SED)/UKOA
+UKSUBSED <- sum(OAC_Input$SUB_SED)/UKOA
+UKSED <- data.frame(UKSPRSED, UKGRPSED, UKSUBSED)
+colnames(UKSED)<-c("SPRGRP SED MEAN", "GRP SED MEAN", "SUBGRP SED MEAN")
+
+SprGrpTable<-NULL
+for (i in 1:nrow(SprGrpTotals)){
+SprGrpCount<-length(which(OAC_Input$SPRGRP==SprGrp[i]))
+SprGrpRow<-cbind(SprGrp[i],SprGrpCount)
+SprGrpTable<-data.frame(rbind(SprGrpTable,SprGrpRow)) }
+colnames(SprGrpTable)<-c("Cluster", "Count")
+
+GrpTable<-NULL
+for (i in 1:nrow(GrpTotals)){
+GrpCount<-length(which(OAC_Input$GRP==Grp[i]))
+GrpRow<-cbind(Grp[i],GrpCount)
+GrpTable<-data.frame(rbind(GrpTable,GrpRow)) }
+colnames(GrpTable)<-c("Cluster", "Count")
+
+SubTable<-NULL
+for (i in 1:nrow(SubTotals)){
+SubCount<-length(which(OAC_Input$SUBGRP==Sub[i]))
+SubRow<-cbind(Sub[i],SubCount)
+SubTable<-data.frame(rbind(SubTable,SubRow)) }
+colnames(SubTable)<-c("Cluster", "Count")
+
+GrpTable<-cbind(as.data.frame(Grp),GrpTable$Count)
+SubTable<-cbind(as.data.frame(Sub),SubTable$Count)
+colnames(GrpTable)[2]<-"Count"
+colnames(SubTable)[2]<-"Count"
+colnames(GrpTable)<-c("Cluster", "Count")
+colnames(SubTable)<-c("Cluster", "Count")
+
+SprGrpTablePCT<-as.data.frame(SprGrpTable$Count/UKOA*100)
+GrpTablePCT<-as.data.frame(GrpTable$Count/UKOA*100)
+SubTablePCT<-as.data.frame(SubTable$Count/UKOA*100)
+colnames(SprGrpTablePCT)<-"Percent"
+colnames(GrpTablePCT)<-"Percent"
+colnames(SubTablePCT)<-"Percent"
+
+SprGrpTablePCT<-sprintf("%.2f", SprGrpTablePCT$Percent)
+GrpTablePCT<-sprintf("%.2f", GrpTablePCT$Percent)
+SubTablePCT<-sprintf("%.2f", SubTablePCT$Percent)
+
+SprGrpTable<-cbind(SprGrpTable,SprGrpTablePCT)
+GrpTable<-cbind(GrpTable,GrpTablePCT)
+SubTable<-cbind(SubTable,SubTablePCT)
+colnames(SprGrpTable)[3]<-"Percent"
+colnames(GrpTable)[3]<-"Percent"
+colnames(SubTable)[3]<-"Percent"
+
+SprGrpTable$Combined<-paste(SprGrpTable$Percent,"%", " (", SprGrpTable$Count,")",sep="")
+GrpTable$Combined<-paste(GrpTable$Percent,"%", " (", GrpTable$Count,")",sep="")
+SubTable$Combined<-paste(SubTable$Percent,"%", " (", SubTable$Count,")",sep="")
+
+SprGrpTable$Cluster<-sub("^","SPRGRP ", SprGrpTable$Cluster)
+GrpTable$Cluster<-sub("^","GRP ", GrpTable$Cluster)
+SubTable$Cluster<-sub("^","SUBGRP ", SubTable$Cluster)
+
+UKOAC<-as.data.frame(rbind(SprGrpTable,GrpTable,SubTable))
+row.names(UKOAC)<-UKOAC$Cluster
+UKOAC$Cluster <- NULL
+UKOAC$Count <- NULL
+UKOAC$Percent <- NULL
+colnames(UKOAC)<-"UK"
+
+UKOACFinal<-as.data.frame(t(UKOAC))
+UKOACLookup<-cbind(UKSED,UKOACFinal)
+
+for (o in 1:length(LA_Files))
+{ 
+LA <- read.csv(paste(getwd(),"/LA/",LA_Files[o],sep=""), head=TRUE) 
+
+LA_OA <-LA[1]
+colnames(LA_OA) <- "OA"
+LA_OANum <-nrow(LA_OA)
+OAC_LA<-merge(LA_OA, OAC_Input, by.x="OA", by.y="OA", ,all.x = FALSE, sort=FALSE)
+
+LASPRSED <- sum(OAC_LA$SPR_SED)/LA_OANum
+LAGRPSED <- sum(OAC_LA$GRP_SED)/LA_OANum
+LASUBSED <- sum(OAC_LA$SUB_SED)/LA_OANum
+LASED <- data.frame(LASPRSED, LAGRPSED, LASUBSED)
+colnames(LASED)<-c("SPRGRP SED MEAN", "GRP SED MEAN", "SUBGRP SED MEAN")
+
+SprGrpTableLA<-NULL
+for (i in 1:nrow(SprGrpTotals)){
+SprGrpCount<-length(which(OAC_LA$SPRGRP==SprGrp[i]))
+SprGrpRow<-cbind(SprGrp[i],SprGrpCount)
+SprGrpTableLA<-data.frame(rbind(SprGrpTableLA,SprGrpRow)) }
+colnames(SprGrpTableLA)<-c("Cluster", "Count")
+
+GrpTableLA<-NULL
+for (i in 1:nrow(GrpTotals)){
+GrpCount<-length(which(OAC_LA$GRP==Grp[i]))
+GrpRow<-cbind(Grp[i],GrpCount)
+GrpTableLA<-data.frame(rbind(GrpTableLA,GrpRow)) }
+colnames(GrpTableLA)<-c("Cluster", "Count")
+
+SubTableLA<-NULL
+for (i in 1:nrow(SubTotals)){
+SubCount<-length(which(OAC_LA$SUBGRP==Sub[i]))
+SubRow<-cbind(Sub[i],SubCount)
+SubTableLA<-data.frame(rbind(SubTableLA,SubRow)) }
+colnames(SubTableLA)<-c("Cluster", "Count")
+
+GrpTableLA<-cbind(as.data.frame(Grp),GrpTableLA$Count)
+SubTableLA<-cbind(as.data.frame(Sub),SubTableLA$Count)
+colnames(GrpTableLA)[2]<-"Count"
+colnames(SubTableLA)[2]<-"Count"
+colnames(GrpTableLA)<-c("Cluster", "Count")
+colnames(SubTableLA)<-c("Cluster", "Count")
+
+SprGrpTableLAPCT<-as.data.frame(SprGrpTableLA$Count/LA_OANum*100)
+GrpTableLAPCT<-as.data.frame(GrpTableLA$Count/LA_OANum*100)
+SubTableLAPCT<-as.data.frame(SubTableLA$Count/LA_OANum*100)
+colnames(SprGrpTableLAPCT)<-"Percent"
+colnames(GrpTableLAPCT)<-"Percent"
+colnames(SubTableLAPCT)<-"Percent"
+
+SprGrpTableLAPCT<-sprintf("%.2f", SprGrpTableLAPCT$Percent)
+GrpTableLAPCT<-sprintf("%.2f", GrpTableLAPCT$Percent)
+SubTableLAPCT<-sprintf("%.2f", SubTableLAPCT$Percent)
+
+SprGrpTableLA<-cbind(SprGrpTableLA,SprGrpTableLAPCT)
+GrpTableLA<-cbind(GrpTableLA,GrpTableLAPCT)
+SubTableLA<-cbind(SubTableLA,SubTableLAPCT)
+colnames(SprGrpTableLA)[3]<-"Percent"
+colnames(GrpTableLA)[3]<-"Percent"
+colnames(SubTableLA)[3]<-"Percent"
+
+SprGrpTableLA$Combined<-paste(SprGrpTableLA$Percent,"%", " (", SprGrpTableLA$Count,")",sep="")
+GrpTableLA$Combined<-paste(GrpTableLA$Percent,"%", " (", GrpTableLA$Count,")",sep="")
+SubTableLA$Combined<-paste(SubTableLA$Percent,"%", " (", SubTableLA$Count,")",sep="")
+
+SprGrpTableLA$Cluster<-sub("^","SPRGRP ", SprGrpTableLA$Cluster)
+GrpTableLA$Cluster<-sub("^","GRP ", GrpTableLA$Cluster)
+SubTableLA$Cluster<-sub("^","SUBGRP ", SubTableLA$Cluster)
+
+LAOAC<-as.data.frame(rbind(SprGrpTableLA,GrpTableLA,SubTableLA))
+row.names(LAOAC)<-LAOAC$Cluster
+LAOAC$Cluster <- NULL
+LAOAC$Count <- NULL
+LAOAC$Percent <- NULL
+LAName<-basename(LA_Files[o])
+LAName<-gsub('.csv', '',LAName,fixed=TRUE)
+colnames(LAOAC)<-LAName
+LAOACFinal<-as.data.frame(t(LAOAC))
+LAOACFinal<-cbind(LASED,LAOACFinal)
+
+UKOACLookup<-rbind(UKOACLookup,LAOACFinal)
+}
+
+UKOAC_LALookupCSV<-cbind(row.names(UKOACLookup),UKOACLookup)
+colnames(UKOAC_LALookupCSV)[1]<-"AREA"
+
+write.table(UKOAC_LALookupCSV, paste("2011 OAC Local Authority Lookup.csv"), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+
+rm(list = setdiff(ls(),c("OAC_Input","UKOAC_LALookupCSV"))) 
+gc()
+
+RE_Files <- list.files(paste(getwd(),"/RE/",sep=""),pattern = "\\.(csv|CSV)$")
+
+UKOA<-nrow(OAC_Input)
+
+SprGrp<-sort(unique(OAC_Input$SPRGRP))
+Grp<-sort(unique(OAC_Input$GRP))
+Sub<-sort(unique(OAC_Input$SUBGRP))
+
+SprGrpTotals<-as.data.frame(table(OAC_Input$SPRGRP))
+GrpTotals<-as.data.frame(table(OAC_Input$GRP))
+SubTotals<-as.data.frame(table(OAC_Input$SUBGRP))
+
+UKSPRSED <- sum(OAC_Input$SPR_SED)/UKOA
+UKGRPSED <- sum(OAC_Input$GRP_SED)/UKOA
+UKSUBSED <- sum(OAC_Input$SUB_SED)/UKOA
+UKSED <- data.frame(UKSPRSED, UKGRPSED, UKSUBSED)
+colnames(UKSED)<-c("SPRGRP SED MEAN", "GRP SED MEAN", "SUBGRP SED MEAN")
+
+SprGrpTable<-NULL
+for (i in 1:nrow(SprGrpTotals)){
+SprGrpCount<-length(which(OAC_Input$SPRGRP==SprGrp[i]))
+SprGrpRow<-cbind(SprGrp[i],SprGrpCount)
+SprGrpTable<-data.frame(rbind(SprGrpTable,SprGrpRow)) }
+colnames(SprGrpTable)<-c("Cluster", "Count")
+
+GrpTable<-NULL
+for (i in 1:nrow(GrpTotals)){
+GrpCount<-length(which(OAC_Input$GRP==Grp[i]))
+GrpRow<-cbind(Grp[i],GrpCount)
+GrpTable<-data.frame(rbind(GrpTable,GrpRow)) }
+colnames(GrpTable)<-c("Cluster", "Count")
+
+SubTable<-NULL
+for (i in 1:nrow(SubTotals)){
+SubCount<-length(which(OAC_Input$SUBGRP==Sub[i]))
+SubRow<-cbind(Sub[i],SubCount)
+SubTable<-data.frame(rbind(SubTable,SubRow)) }
+colnames(SubTable)<-c("Cluster", "Count")
+
+GrpTable<-cbind(as.data.frame(Grp),GrpTable$Count)
+SubTable<-cbind(as.data.frame(Sub),SubTable$Count)
+colnames(GrpTable)[2]<-"Count"
+colnames(SubTable)[2]<-"Count"
+colnames(GrpTable)<-c("Cluster", "Count")
+colnames(SubTable)<-c("Cluster", "Count")
+
+SprGrpTablePCT<-as.data.frame(SprGrpTable$Count/UKOA*100)
+GrpTablePCT<-as.data.frame(GrpTable$Count/UKOA*100)
+SubTablePCT<-as.data.frame(SubTable$Count/UKOA*100)
+colnames(SprGrpTablePCT)<-"Percent"
+colnames(GrpTablePCT)<-"Percent"
+colnames(SubTablePCT)<-"Percent"
+
+SprGrpTablePCT<-sprintf("%.2f", SprGrpTablePCT$Percent)
+GrpTablePCT<-sprintf("%.2f", GrpTablePCT$Percent)
+SubTablePCT<-sprintf("%.2f", SubTablePCT$Percent)
+
+SprGrpTable<-cbind(SprGrpTable,SprGrpTablePCT)
+GrpTable<-cbind(GrpTable,GrpTablePCT)
+SubTable<-cbind(SubTable,SubTablePCT)
+colnames(SprGrpTable)[3]<-"Percent"
+colnames(GrpTable)[3]<-"Percent"
+colnames(SubTable)[3]<-"Percent"
+
+SprGrpTable$Combined<-paste(SprGrpTable$Percent,"%", " (", SprGrpTable$Count,")",sep="")
+GrpTable$Combined<-paste(GrpTable$Percent,"%", " (", GrpTable$Count,")",sep="")
+SubTable$Combined<-paste(SubTable$Percent,"%", " (", SubTable$Count,")",sep="")
+
+SprGrpTable$Cluster<-sub("^","SPRGRP ", SprGrpTable$Cluster)
+GrpTable$Cluster<-sub("^","GRP ", GrpTable$Cluster)
+SubTable$Cluster<-sub("^","SUBGRP ", SubTable$Cluster)
+
+UKOAC<-as.data.frame(rbind(SprGrpTable,GrpTable,SubTable))
+row.names(UKOAC)<-UKOAC$Cluster
+UKOAC$Cluster <- NULL
+UKOAC$Count <- NULL
+UKOAC$Percent <- NULL
+colnames(UKOAC)<-"UK"
+
+UKOACFinal<-as.data.frame(t(UKOAC))
+UKOACLookup<-cbind(UKSED,UKOACFinal)
+
+for (o in 1:length(RE_Files))
+{ 
+RE <- read.csv(paste(getwd(),"/RE/",RE_Files[o],sep=""), head=TRUE) 
+
+RE_OA <-RE[1]
+colnames(RE_OA) <- "OA"
+RE_OANum <-nrow(RE_OA)
+OAC_RE<-merge(RE_OA, OAC_Input, by.x="OA", by.y="OA", ,all.x = FALSE, sort=FALSE)
+
+RESPRSED <- sum(OAC_RE$SPR_SED)/RE_OANum
+REGRPSED <- sum(OAC_RE$GRP_SED)/RE_OANum
+RESUBSED <- sum(OAC_RE$SUB_SED)/RE_OANum
+RESED <- data.frame(RESPRSED, REGRPSED, RESUBSED)
+colnames(RESED)<-c("SPRGRP SED MEAN", "GRP SED MEAN", "SUBGRP SED MEAN")
+
+SprGrpTableRE<-NULL
+for (i in 1:nrow(SprGrpTotals)){
+SprGrpCount<-length(which(OAC_RE$SPRGRP==SprGrp[i]))
+SprGrpRow<-cbind(SprGrp[i],SprGrpCount)
+SprGrpTableRE<-data.frame(rbind(SprGrpTableRE,SprGrpRow)) }
+colnames(SprGrpTableRE)<-c("Cluster", "Count")
+
+GrpTableRE<-NULL
+for (i in 1:nrow(GrpTotals)){
+GrpCount<-length(which(OAC_RE$GRP==Grp[i]))
+GrpRow<-cbind(Grp[i],GrpCount)
+GrpTableRE<-data.frame(rbind(GrpTableRE,GrpRow)) }
+colnames(GrpTableRE)<-c("Cluster", "Count")
+
+SubTableRE<-NULL
+for (i in 1:nrow(SubTotals)){
+SubCount<-length(which(OAC_RE$SUBGRP==Sub[i]))
+SubRow<-cbind(Sub[i],SubCount)
+SubTableRE<-data.frame(rbind(SubTableRE,SubRow)) }
+colnames(SubTableRE)<-c("Cluster", "Count")
+
+GrpTableRE<-cbind(as.data.frame(Grp),GrpTableRE$Count)
+SubTableRE<-cbind(as.data.frame(Sub),SubTableRE$Count)
+colnames(GrpTableRE)[2]<-"Count"
+colnames(SubTableRE)[2]<-"Count"
+colnames(GrpTableRE)<-c("Cluster", "Count")
+colnames(SubTableRE)<-c("Cluster", "Count")
+
+SprGrpTableREPCT<-as.data.frame(SprGrpTableRE$Count/RE_OANum*100)
+GrpTableREPCT<-as.data.frame(GrpTableRE$Count/RE_OANum*100)
+SubTableREPCT<-as.data.frame(SubTableRE$Count/RE_OANum*100)
+colnames(SprGrpTableREPCT)<-"Percent"
+colnames(GrpTableREPCT)<-"Percent"
+colnames(SubTableREPCT)<-"Percent"
+
+SprGrpTableREPCT<-sprintf("%.2f", SprGrpTableREPCT$Percent)
+GrpTableREPCT<-sprintf("%.2f", GrpTableREPCT$Percent)
+SubTableREPCT<-sprintf("%.2f", SubTableREPCT$Percent)
+
+SprGrpTableRE<-cbind(SprGrpTableRE,SprGrpTableREPCT)
+GrpTableRE<-cbind(GrpTableRE,GrpTableREPCT)
+SubTableRE<-cbind(SubTableRE,SubTableREPCT)
+colnames(SprGrpTableRE)[3]<-"Percent"
+colnames(GrpTableRE)[3]<-"Percent"
+colnames(SubTableRE)[3]<-"Percent"
+
+SprGrpTableRE$Combined<-paste(SprGrpTableRE$Percent,"%", " (", SprGrpTableRE$Count,")",sep="")
+GrpTableRE$Combined<-paste(GrpTableRE$Percent,"%", " (", GrpTableRE$Count,")",sep="")
+SubTableRE$Combined<-paste(SubTableRE$Percent,"%", " (", SubTableRE$Count,")",sep="")
+
+SprGrpTableRE$Cluster<-sub("^","SPRGRP ", SprGrpTableRE$Cluster)
+GrpTableRE$Cluster<-sub("^","GRP ", GrpTableRE$Cluster)
+SubTableRE$Cluster<-sub("^","SUBGRP ", SubTableRE$Cluster)
+
+REOAC<-as.data.frame(rbind(SprGrpTableRE,GrpTableRE,SubTableRE))
+row.names(REOAC)<-REOAC$Cluster
+REOAC$Cluster <- NULL
+REOAC$Count <- NULL
+REOAC$Percent <- NULL
+REName<-basename(RE_Files[o])
+REName<-gsub('.csv', '',REName,fixed=TRUE)
+colnames(REOAC)<-REName
+REOACFinal<-as.data.frame(t(REOAC))
+REOACFinal<-cbind(RESED,REOACFinal)
+
+UKOACLookup<-rbind(UKOACLookup,REOACFinal)
+}
+
+UKOAC_RELookupCSV<-cbind(row.names(UKOACLookup),UKOACLookup)
+colnames(UKOAC_RELookupCSV)[1]<-"AREA"
+
+write.table(UKOAC_RELookupCSV, paste("2011 OAC Region and Country Lookup.csv"), sep = ",", row.names=FALSE, col.names = TRUE, qmethod = "double")
+
