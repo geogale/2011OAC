@@ -11,7 +11,7 @@ This webpage is designed to provide additional material and information to aid u
 
 2011 OAC DBF Lookup: [Download ZIP File] (http://bit.ly/OACDBFLookup)
 
-2011 OAC by Local Authority (or equivalent): [Download ZIP File] (http://areaclassification.org.uk/files/2014/07/2011-OAC-Coming-Soon.pdf)
+2011 OAC by Local Authority (or equivalent): [Download XLSX File] (http://bit.ly/OACbyLA)
 
 ### Shapefiles
 
@@ -69,7 +69,7 @@ Map of Supergroup assignments to buildings in London****: [Download ZIP File] (h
 
 2011 OAC Cluster Bar Plots: [Download PDF] (http://bit.ly/OACBarPlots)
 
-2011 OAC Cluster Profile Data: [Download ZIP File] (http://areaclassification.org.uk/files/2014/07/2011-OAC-Coming-Soon.pdf)
+2011 OAC Cluster Profile Data: [Download ZIP File] (http://bit.ly/OACplotdata)
 
 ### Input Data
 
