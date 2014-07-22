@@ -97,8 +97,8 @@ Map of Supergroup assignments to buildings in London****: [Download ZIP File] (h
 
 2011 OAC Variable Correlation: [Download ZIP File] (http://bit.ly/OAC-Var-Correlation)
 
-2011 OAC Cluster Evaluation: [Download ZIP File] (http://bit.ly/OAC-Evaluation)
-(Lorenz Curves, Gini Coefficients and Distribution Plots)
+2011 OAC Cluster Evaluation (Lorenz Curves, Gini Coefficients and Distribution Plots): [Download ZIP File] (http://bit.ly/OAC-Evaluation)
+
 
 ### Colour Scheme
 
