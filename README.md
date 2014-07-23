@@ -5,9 +5,9 @@ A number of 2011 OAC resources are available on the [ONS webpage](http://www.ons
 
 This webpage is designed to provide additional material and information to aid use of the 2011 OAC. The following resources are available:
 
-### Batch Download
+### Bulk Download
 
-Download all resources provided below: [Download ZIP File] (http://bit.ly/OAC-Batch-Download)
+Download all resources provided below: [Download ZIP File] (http://bit.ly/OAC-Bulk-Download)
 
 ### Datasets
 
