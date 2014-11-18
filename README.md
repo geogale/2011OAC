@@ -11,9 +11,9 @@ Download all resources provided below: [Download ZIP File] (http://tiny.cc/OAC-B
 
 ### Datasets
 
-2011 OAC Dataset - CSV: [Download ZIP File] (http://tiny.cc/OAC-CSV)
+2011 OAC Dataset (including Squared Euclidean distance values) - CSV: [Download ZIP File] (http://tiny.cc/OAC-CSV)
 
-2011 OAC Dataset - DBF: [Download ZIP File] (http://tiny.cc/OAC-DBF)
+2011 OAC Dataset (including Squared Euclidean distance values) - DBF: [Download ZIP File] (http://tiny.cc/OAC-DBF)
 
 2011 OAC Dataset - Local Authority CSVs: [Download ZIP File] (http://tiny.cc/OAC-LA-CSV)
 
