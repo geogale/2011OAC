@@ -33,7 +33,7 @@ Download all resources provided below: [Download ZIP File] (http://tiny.cc/OAC-B
 
 2011 OAC Buildings: [Download ZIP File] (http://tiny.cc/OAC-Shp-Buildings)
 
-2011 OAC Local Authorites (Shapefile per Local Authority): [Download ZIP File] (http://tiny.cc/OAC-Shp-LA)
+2011 OAC Local Authorities (Shapefile per Local Authority): [Download ZIP File] (http://tiny.cc/OAC-Shp-LA)
 
 2011 OAC Regions/Countries (Shapefile per Region or Country): [Download ZIP File] (http://tiny.cc/OAC-Shp-Regions)
 
