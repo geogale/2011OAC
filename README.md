@@ -1,7 +1,7 @@
 ## 2011 Area Classification for Output Areas (the 2011 Output Area Classification or 2011 OAC)
 The 2011 OAC has been created through collaboration between the Office for National Statistics (ONS) and University College London (UCL). The 2011 OAC is a three-tiered hierarchical geodemographic classification of the UK built using only 2011 UK Census data at the Output Area / Small Area level. It consists of 8 Supergroups, 26 Groups and 76 Subgroups. 
 
-A number of 2011 OAC resources are available on the [ONS webpage](http://www.ons.gov.uk/ons/guide-method/geography/products/area-classifications/ns-area-classifications/ns-2011-area-classifications/index.html) and [Open Geodemographics](http://www.opengeodemographics.com/)
+A number of 2011 OAC resources are available on the [ONS webpage](http://www.ons.gov.uk/methodology/geography/geographicalproducts/areaclassifications/2011areaclassifications) (or the [previous ONS webpage]  (http://webarchive.nationalarchives.gov.uk/20160105160709/http://www.ons.gov.uk/ons/guide-method/geography/products/area-classifications/ns-area-classifications/ns-2011-area-classifications/index.html) which has now been archived) and [Open Geodemographics](http://www.opengeodemographics.com/)
 
 This webpage is designed to provide additional material and information to aid use of the 2011 OAC. The following resources are available:
 
@@ -79,7 +79,7 @@ Map of Supergroup assignments to buildings in London****: [Download ZIP File] (h
 
 2011 OAC Hierarchical Structure: [Download PDF] (http://tiny.cc/OAC-Structure)
 
-2011 OAC Pen Portraits: [Download ONS PDF] (http://www.ons.gov.uk/ons/guide-method/geography/products/area-classifications/ns-area-classifications/ns-2011-area-classifications/pen-portraits-and-radial-plots/pen-portraits.pdf)
+2011 OAC Pen Portraits: [Download ONS PDF] (http://www.ons.gov.uk/ons/guide-method/geography/products/area-classifications/ns-area-classifications/ns-2011-area-classifications/pen-portraits-and-radial-plots/pen-portraits-oa.pdf)
 
 2011 OAC Cluster Profiles - Radial Plots: [Download PDF] (http://tiny.cc/OAC-Radial-Plots)
 
