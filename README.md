@@ -3,11 +3,13 @@ The 2011 OAC has been created through collaboration between the Office for Natio
 
 A number of 2011 OAC resources are available on the [ONS webpage](http://www.ons.gov.uk/methodology/geography/geographicalproducts/areaclassifications/2011areaclassifications) (or the [previous ONS webpage]  (http://webarchive.nationalarchives.gov.uk/20160105160709/http://www.ons.gov.uk/ons/guide-method/geography/products/area-classifications/ns-area-classifications/ns-2011-area-classifications/index.html) which has now been archived) and [Open Geodemographics](http://www.opengeodemographics.com/)
 
+You can access the journal paper 'Creating the 2011 area classification for output areas (2011 OAC)' for free from [here] (http://josis.org/index.php/josis/article/viewArticle/232)
+
 This webpage is designed to provide additional material and information to aid use of the 2011 OAC. The following resources are available:
 
 ### Bulk Download
 
-Download all resources provided below: [Download ZIP File] (http://tiny.cc/OAC-Bulk-Download)
+Download all resources provided below: [Download as a ZIP File] (http://tiny.cc/OAC-Bulk-Download)
 
 ### Datasets
 
